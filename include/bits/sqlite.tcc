@@ -25,6 +25,6 @@ this->db.reset(temp, sqlite3_close);
 }
 
 } /* data_pattern */
-#include "string_data_model_shifts.hpp"
+#include <data_pattern/bits/string_data_model_shifts.hpp>
 #endif
 

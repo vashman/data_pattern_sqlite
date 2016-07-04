@@ -7,14 +7,14 @@
 
 #include <vector>
 #include <iostream>
-#include "../include/data_model.hpp"
-#include "../include/raw.hpp"
+#include <data_pattern/data_model.hpp>
+#include <data_pattern/raw.hpp>
 #include "../src/sqlite.cpp"
 
 using std::vector;
-using data_pattern::sqlite;
+using data_pattern_sqlite::sqlite;
 using data_pattern::raw;
-using data_pattern::sqlite_statement;
+using data_pattern_sqlite::sqlite_statement;
 using data_pattern::make_data_model;
 using data_pattern::model_state;
 
@@ -107,7 +107,7 @@ sync(io);
 
 int temp_int;
 std::string temp_str;
-data_pattern::raw temp_raw;
+raw temp_raw;
 double temp_dbl;
 
 int temp;

@@ -1,8 +1,5 @@
 Contributing
 ==========================================================================
-The main repository is on `http://github.com/vashman/data_pattern`.
-All issues and disscusions happen on `http://github.com/vashman/
-data_pattern/issues.`
 
 Table of Contents
 ==========================================================================
@@ -35,13 +32,7 @@ infomartion.
 
 Submitting Changes
 ==========================================================================
-Changes should be submitted trough [github]
-(http://github.com/vashman/typesystems). The changes should be submitted
-under the topic branch for which it address. This topic branch should be
-merged with the newest development branch before submitting. 
-After submitting a pull request the connected [issues][issues] should also
-be updated.
 
-[issues]: http://www.github.com/vashman/data_pattern/issues
-[src.style]: http://vashman.github.io/docs/style/
+[issues]: http://www.github.com/404
+[src.style]: http://www.github.com/404
 [doc.style]: http://www.github.com/404

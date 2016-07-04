@@ -6,14 +6,13 @@
 //          http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
-#include "../include/raw.hpp"
+#include <data_pattern/raw.hpp>
 #include "../src/sqlite.cpp"
 
 using std::cout;
 using std::endl;
-using data_pattern::sqlite;
-using data_pattern::raw;
-using data_pattern::sqlite_statement;
+using data_pattern_sqlite::sqlite;
+using data_pattern_sqlite::sqlite_statement;
 
 int main () {
 sqlite db("testdata");

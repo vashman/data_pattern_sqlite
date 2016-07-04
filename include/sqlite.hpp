@@ -13,7 +13,7 @@ extern "C"{
 }
 #include <stdexcept>
 #include <string>
-#include "raw.hpp"
+#include <data_pattern/raw.hpp>
 #include <memory>
 #include <iterator>
 

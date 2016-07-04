@@ -1,9 +1,6 @@
 CC=/usr/bin/g++
 FLAGS=-g -ltypesystems -lsqlite3 -fno-rtti -std=c++11 -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror -Wno-unused
 
-#CC=/usr/bin/clang++
-#FLAGS=-std=c++11 -ltypesystems -lsqlite3 -fno-rtti
-
 BIN=./bin
 SRC=../src
 EXDIR=../example
@@ -19,14 +16,14 @@ EXOBJS=$(patsubst %, $(EXOBJ)/%,$(notdir $(EXSRC:%.cpp=%.o)))
 EXAMPLES=$(patsubst %, $(BIN)/%, $(notdir $(EXSRC:%.cpp=%)))
 
 # install dirs
-INCDIR=/usr/local/include/data_pattern
+INCDIR=/usr/local/include/data_pattern_sqlite
 LIBDIR=/usr/local/lib
 
 MAJOR=0
 MINOR=0
-LIB=libdata_pattern.so
-DLIB=$(LIBS)/libdata_pattern.so.$(MAJOR).$(MINOR)
-SLIB=$(LIBS)/libdata_pattern.a.$(MAJOR).$(MINOR)
+LIB=libdata_pattern_sqlite.so
+DLIB=$(LIBS)/libdata_pattern_sqlite.so.$(MAJOR).$(MINOR)
+SLIB=$(LIBS)/libdata_pattern_sqlite.a.$(MAJOR).$(MINOR)
 
 .PHONY: clean all dirs lib example
 
