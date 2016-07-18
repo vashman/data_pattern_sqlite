@@ -11,7 +11,7 @@
 #include <string>
 #include "../include/sqlite.hpp"
 
-namespace data_pattern {
+namespace data_pattern_sqlite {
 
 /* sqlite_exception ctor  */
 sqlite_exception::sqlite_exception (
@@ -23,16 +23,15 @@ sqlite_exception::sqlite_exception (
 }
 
 namespace bits {
-namespace sqlite {
 /* check for sqlite error */
-void
+int
 check_error (
   int _rv
 ){
 switch (_rv){
   case SQLITE_DONE:
   case SQLITE_ROW:
-  case SQLITE_OK: return;
+  case SQLITE_OK: return _rv;
 
   case SQLITE_ERROR:
     throw sqlite_exception (
@@ -188,46 +187,46 @@ switch (_rv){
     );
   default:
     throw sqlite_exception (
-      "Sqlite error"
+      "Sqlite error with unknown code."
     , _rv
     );
 }
 }
-} /* sqlite */ } /* bits */
+} /* bits */
 
 /* sqlite step */
 void
-sqlite::step (
-  sqlite_statement & _stmt
+step (
+  sqlite_statement _stmt
 ){
-bits::sqlite::check_error (
-  sqlite3_step(_stmt.stmt.get()) );
-*_stmt.max_col = sqlite3_column_count (
+int temp_state
+  = bits::check_error ( sqlite3_step (
+  _stmt.stmt.get()) );
+
+  if (temp_state == SQLITE_OK)
+  *_stmt.state = SQLITE_DONE;
+  else
+  *_stmt.state = temp_state;
+
+auto temp = sqlite3_column_count (
   _stmt.stmt.get() );
+  if (temp > 0)
+  _stmt.max_col.reset(new int(temp));
 _stmt.index = 0;
 }
 
-/* sqlite step */
-void
-sqlite::step (
-  sqlite_statement && _stmt
-){
-bits::sqlite::check_error (
-  sqlite3_step(_stmt.stmt.get()) );
-*_stmt.max_col = sqlite3_column_count (
-  _stmt.stmt.get() );
-_stmt.index = 0;
+/* sqlite ctor */
+sqlite::sqlite (
+  char const * _file
+)
+: db (nullptr, sqlite3_close) {
+sqlite3 * temp;
+  bits::check_error (
+  sqlite3_open(_file, &temp) );
+this->db.reset(temp, sqlite3_close);
 }
 
-/* sqlite create */
-sqlite_statement
-sqlite::create (
-  char const * _query
-){
-return sqlite_statement(_query, *this);
-}
-
-} /* data_pattern */
+} /* data_pattern_sqlite */
 #include "bits/sqlite_statement.cpp"
 #endif
 

@@ -7,18 +7,17 @@
 
 #include <vector>
 #include <iostream>
+#include <cassert>
 #include <data_pattern/data_model.hpp>
 #include <data_pattern/raw.hpp>
 #include "../src/sqlite.cpp"
 
-using std::vector;
 using data_pattern_sqlite::sqlite;
-using data_pattern::raw;
 using data_pattern_sqlite::sqlite_statement;
 using data_pattern::make_data_model;
 using data_pattern::model_state;
 
-vector <std::string> query = {
+std::vector <std::string> query = {
   "CREATE TABLE IF NOT EXISTS "
   "test3 (Value INT, str TEXT, dec REAL"
   ", raw Blob);"
@@ -49,48 +48,53 @@ sqlite
 create_db (
   sqlite _db
 ){
-_db.step (_db.create(query[0].c_str()));
-_db.step (_db.create(query[1].c_str()));
+step (sqlite_statement(_db, query[0].c_str()));
+step (sqlite_statement(_db, query[1].c_str()));
 return _db;
 }
 
 int main () {
-std::shared_ptr<sqlite_statement> stmt;
-bool istmt_active = false, ostmt_active = false;
+std::cerr << std::boolalpha;
+sqlite_statement istmt, ostmt;
 unsigned int stage = 2;
-auto io ( make_data_model ( 
+
+auto io ( make_data_model (
   create_db(sqlite ("testdata"))
 // input iterator
 , [&](sqlite & _db)
   -> sqlite_statement & {
-   if (istmt_active == false){
-   stmt.reset ( new sqlite_statement (
-     _db.create(query[stage].c_str()))
-   );
-   istmt_active = true;
-  _db.step(*stmt);
-   }
-  return *stmt;
+std::cerr << "\ninput iter called.";
+   if (istmt == sqlite_statement()){
+   std::cerr << "\ncreating istmt: " <<
+  stage << " \""
+  << query[stage].c_str();
+   istmt = sqlite_statement (
+     _db, query[stage].c_str());
+  step(istmt);
+  }
+  return istmt;
   }
 // output iterator
 , [&](sqlite & _db)
   -> sqlite_statement & {
-   if (ostmt_active == false){
-   stmt.reset ( new sqlite_statement (
-     _db.create(query[stage].c_str()))
-   );
-   ostmt_active = true;
+   if (ostmt == sqlite_statement()){
+   ostmt = sqlite_statement (
+     _db, query[stage].c_str() );
    }
-  return *stmt;
+  return ostmt;
   }
 // sync
-, [&](sqlite& _db, model_state& _state){
-    if (istmt_active == false){
-    _db.step(*stmt);
+, [&](sqlite & _db, model_state & _state){
+std::cerr << "\nsyncing";
+    if (ostmt != sqlite_statement()){
+    step(ostmt); ++stage;
     }
-  ++stage;
-  ostmt_active = false;
-  istmt_active = false;
+    if (istmt != sqlite_statement()){
+    std::cerr << "\ninput synced, stage: ";
+    _state == model_state::end;
+    ++stage;
+    std::cerr << stage;
+    }
   }
 ) );
 
@@ -98,7 +102,7 @@ io
 << 45
 << std::string("test string")
 << 12.04
-<< raw("0101", 4);
+<< data_pattern::raw("0101", 4);
 sync(io);
 
 /* bind data into data_model */
@@ -107,15 +111,23 @@ sync(io);
 
 int temp_int;
 std::string temp_str;
-raw temp_raw;
+data_pattern::raw temp_raw;
 double temp_dbl;
 
 int temp;
 sync(io);
-io >> temp >> temp;
+io >> temp;
+std::cerr << "\ntemp: " << temp;
+io >> temp;
+std::cerr << "\ntemp: " << temp;
+assert(temp == 4);
 
 sync(io);
 io >> temp_int >> temp_dbl;
+std::cerr << "\n int is: " << temp_int <<
+" doibl is: " << temp_dbl;
+assert (temp_int == 45);
+assert (temp_dbl == 12.04);
 
 return 0;
 }

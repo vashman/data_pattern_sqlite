@@ -8,31 +8,39 @@
 #ifndef DATA_PATTERN_BITS_SQLITE_CPP
 #define DATA_PATTERN_BITS_SQLITE_CPP
 
-namespace data_pattern {
+namespace data_pattern_sqlite {
 
 /* ctor */
 sqlite_statement::sqlite_statement (
-  char const * _query
-, sqlite & _db
+  sqlite & _db
+, char const * _query
 )
-/* index starts at 1 and then
-  increments. */
+/*
+ * index starts at 1 and then
+ * increments.
+ */
 : stmt () 
-, db(_db.db)
-, max_col (new int(0))
+  /*
+   * The following state cannot be set
+   * only thrown, and signifies a new
+   * un-stepped statement.
+   */
+, state (new int(SQLITE_MISUSE))
+, max_col (nullptr)
 , index (1) {
 sqlite3_stmt * stmtptr = NULL;
-  bits::sqlite
+  bits
 ::check_error( sqlite3_prepare_v2 (
   _db.db.get()
 , _query
-, -1 // Query is null terminated.
+, -1 /* Query is null terminated. */
 , & stmtptr
-/* There is never an unused portion of
-  the statement.
-*/
+/* 
+ * There is never an unused portion of
+ * the statement.
+ */
 , 0 ));
-this->stmt.reset(
+this->stmt.reset (
   stmtptr, sqlite3_finalize );
 }
 
@@ -65,11 +73,10 @@ sqlite_statement::bind (
   int _index
 , int _var
 ){
-  bits::sqlite
+*this->state =
+  bits
 ::check_error ( sqlite3_bind_int (
-  this->stmt.get()
-, _index
-, _var ) );
+  this->stmt.get(), _index, _var ) );
 }
 
 sqlite_statement &
@@ -100,7 +107,8 @@ sqlite_statement::bind (
 , void const * _blob
 , int _size
 ){
-  bits::sqlite
+*this->state =
+  bits
 ::check_error ( sqlite3_bind_blob (
   this->stmt.get()
 , _index
@@ -115,7 +123,8 @@ sqlite_statement::bind (
   int _index
 , char const * _str
 ){
-  bits::sqlite
+*this->state =
+  bits
 ::check_error ( sqlite3_bind_text (
   this->stmt.get()
 , _index
@@ -139,7 +148,8 @@ sqlite_statement::bind (
   int _index
 , double _var
 ){
-  bits::sqlite
+*this->state =
+  bits
 ::check_error ( sqlite3_bind_double (
   this->stmt.get(), _index, _var ) );
 }
@@ -157,7 +167,8 @@ void
 sqlite_statement::bind (
   int _index
 ){
-  bits::sqlite
+*this->state =
+  bits
 ::check_error ( sqlite3_bind_null (
   this->stmt.get(), _index ) );
 }
@@ -172,7 +183,7 @@ return sqlite3_column_int (
 }
 
 sqlite_statement::operator int (){
-return this->column_int(this->index);
+return this->column_int(this->index-1);
 }
 
 /* sqlite_statement column_double */
@@ -186,28 +197,29 @@ return sqlite3_column_double (
 
 sqlite_statement::operator double (){
 return
-this->column_double(this->index);
+this->column_double(this->index-1);
 }
 
   sqlite_statement
 ::operator std::string (){
 return std::string (
   reinterpret_cast<char const *> (
-    this->column_text(this->index) )
+    this->column_text(this->index-1) )
 );
 }
 
-sqlite_statement::operator raw (){
-return raw (
+  sqlite_statement
+::operator data_pattern::raw (){
+return data_pattern::raw (
   this->column_blob(this->index)
 , static_cast<std::size_t>(
-    this->column_bytes(this->index) )
+    this->column_bytes(this->index-1) )
 );
 }
 
 sqlite_statement &
 sqlite_statement::operator = (
-  raw _var
+  data_pattern::raw _var
 ){
 this->bind (
   this->index
@@ -281,9 +293,35 @@ bool
 sqlite_statement::operator == (
   sqlite_statement const & _rhs
 ) const {
-return (this->index > *this->max_col);
+  /* no statement */
+  if (this->state == nullptr)
+  return true;
+  /*
+   * Output statement or un-stepped
+   * input statement.
+   */
+  if (this->max_col == nullptr)
+  return *this->state == SQLITE_DONE;
+
+/* stepped input statement. */
+std::cerr << "\nS: index > "
+<<this->index << " max " <<
+*this->max_col << " state: "
+<<*this->state;
+return (
+   !(*this->state == SQLITE_ROW)
+|| this->index > *this->max_col
+);
 }
 
-} /* data pattern */
+bool
+operator != (
+  sqlite_statement const & _lhs
+, sqlite_statement const & _rhs
+) {
+return !(_lhs == _rhs);
+}
+
+} /* data pattern_sqlite */
 #endif
 

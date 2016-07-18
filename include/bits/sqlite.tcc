@@ -8,23 +8,10 @@
 #ifndef DATA_PATTERN_SQLITE_TCC
 #define DATA_PATTERN_SQLITE_TCC
 
-namespace data_pattern {
+namespace data_pattern_sqlite {
 
-/* sqlite ctor */
-sqlite::sqlite (
-  char const * _file
-)
-: db (nullptr, sqlite3_close)
-, zErrMsg (nullptr)
-, result (nullptr) {
-sqlite3 * temp;
-  bits::sqlite
-::check_error (
-  sqlite3_open(_file, &temp) );
-this->db.reset(temp, sqlite3_close);
-}
 
-} /* data_pattern */
-#include <data_pattern/bits/string_data_model_shifts.hpp>
+
+} /* data_pattern_sqlite */
 #endif
 

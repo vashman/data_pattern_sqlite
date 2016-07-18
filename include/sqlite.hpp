@@ -14,19 +14,24 @@ extern "C"{
 #include <stdexcept>
 #include <string>
 #include <data_pattern/raw.hpp>
+#include <data_pattern/bits/string_data_model_shifts.hpp>
 #include <memory>
 #include <iterator>
 
-namespace data_pattern {
+namespace data_pattern_sqlite {
 
 class sqlite_statement;
 class sqlite_exception;
 class sqlite;
 
+void
+step (
+  sqlite_statement
+);
+
 /* sqlite exception */
-class sqlite_exception
+struct sqlite_exception
 : public std::runtime_error {
-public:
   
 explicit
 sqlite_exception (
@@ -37,35 +42,42 @@ sqlite_exception (
 int const rv;
 }; /* sqlite exception */
 
-/* query_statement wraps an sqlite
-  statement and does some book keeping.
-*/
+/*
+ * query_statement wraps an sqlite
+ * statement and does some book keeping.
+ */
 class sqlite_statement
 : public std::iterator <
   void, std::input_iterator_tag >{
 
 std::shared_ptr<sqlite3_stmt> stmt;
-std::shared_ptr<sqlite3> db;
+std::shared_ptr<int> state;
 
-/* When a statement runs, set this to
-  max column.
-*/
+/* 
+ * When a statement runs, set this to
+ * max column.
+ */
 std::shared_ptr<int> max_col;
 
 public:
 
-/* Column counter used to keep track
-  of which column in the current
-  table is currently active.
-*/
+/*
+ * Column counter used to keep track
+ * of which column in the current
+ * table is currently active.
+ */
 int index;
 
 /* ctor */
 explicit
 sqlite_statement (
-  char const * // query
-, sqlite &
+  sqlite &
+, char const * // query
 );
+
+/* ctor */
+explicit
+sqlite_statement () = default;
 
 /* ctor copy */
 sqlite_statement (
@@ -105,7 +117,7 @@ operator double ();
 explicit
 operator std::string ();
 
-operator raw ();
+operator data_pattern::raw ();
 
 sqlite_statement &
 operator = (
@@ -124,7 +136,7 @@ operator = (
 
 sqlite_statement &
 operator = (
-  raw
+  data_pattern::raw
 );
 
 /* bind double */
@@ -219,17 +231,23 @@ operator == (
   sqlite_statement const &
 ) const;
 
-friend class sqlite;
+friend void step(sqlite_statement);
 }; /* sqlite satemenmt */
+
+bool
+operator != (
+  sqlite_statement const & _lhs
+, sqlite_statement const & _rhs
+);
 
 /* sqlite */
 class sqlite {
 public:
 
-/* ctor
-  Takes the filepath "char const *" to
-  database location.
-*/
+/* 
+ * Takes the filepath "char const *" to
+ * database location.
+ */
 explicit
 sqlite (
   char const *
@@ -260,47 +278,28 @@ operator = (
   sqlite &&
 ) = default;
 
-/* create */
-sqlite_statement
-create (
-  char const * _query
-);
-
-/* step */
-void
-step (
-  sqlite_statement &
-);
-
-/* step */
-void
-step (
-  sqlite_statement &&
-);
-
-
 private:
 
 std::shared_ptr<sqlite3> db;
-std::unique_ptr<char> zErrMsg;
-std::unique_ptr<char> result;
+
+// statement needs access to db ptr.
 friend sqlite_statement;
 }; /* sqlite  */
 
 namespace bits {
-namespace sqlite {
-/* check_error
-  Throws an exception for an sqlite
-  error code.
-*/
-void
-check_error(
+/*
+ * Throws an exception for an sqlite
+ * error code, or returns the code if
+ * nothing exceptional happens.
+ */
+int
+check_error (
   int
 );
 
-} /* sqlite */ } /* bits */
+} /* bits */
 
-} /* data_pattern */
+} /* data_pattern_sqlite */
 #include "bits/sqlite.tcc"
 #endif
 
