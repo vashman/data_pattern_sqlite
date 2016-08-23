@@ -35,7 +35,7 @@ std::vector <std::string> query = {
 ,
   "SELECT ID, Value FROM test;"
 ,
-  "SELECT Value, dec, raw FROM "
+  "SELECT Value, dec, str, raw FROM "
   "test3;"
 };
 
@@ -56,6 +56,7 @@ return _db;
 int main () {
 std::cerr << std::boolalpha;
 sqlite_statement istmt, ostmt;
+bool inflag = false;
 unsigned int stage = 2;
 
 auto io ( make_data_model (
@@ -63,11 +64,9 @@ auto io ( make_data_model (
 // input iterator
 , [&](sqlite & _db)
   -> sqlite_statement & {
-std::cerr << "\ninput iter called.";
    if (istmt == sqlite_statement()){
-   std::cerr << "\ncreating istmt: " <<
-  stage << " \""
-  << query[stage].c_str();
+   inflag = true;
+   std::cerr << "\nI: creating istmt: " << stage << " \"" << query[stage].c_str();
    istmt = sqlite_statement (
      _db, query[stage].c_str());
   step(istmt);
@@ -85,16 +84,18 @@ std::cerr << "\ninput iter called.";
   }
 // sync
 , [&](sqlite & _db, model_state & _state){
-std::cerr << "\nsyncing";
+std::cerr << " SYNC ";
     if (ostmt != sqlite_statement()){
     step(ostmt); ++stage;
     }
-    if (istmt != sqlite_statement()){
-    std::cerr << "\ninput synced, stage: ";
-    _state == model_state::end;
+    if (istmt == sqlite_statement() && inflag){
+    std::cerr << "\nI: input synced, stage: ";
+//    _state = model_state::end;
     ++stage;
+    inflag = false;
     std::cerr << stage;
     }
+std::cerr << " END ";
   }
 ) );
 
@@ -114,20 +115,26 @@ std::string temp_str;
 data_pattern::raw temp_raw;
 double temp_dbl;
 
-int temp;
 sync(io);
-io >> temp;
-std::cerr << "\ntemp: " << temp;
-io >> temp;
-std::cerr << "\ntemp: " << temp;
-assert(temp == 4);
+io >> temp_int; std::cerr << "\ntemp: " << temp_int;
+assert (temp_int == 1);
+io >> temp_int; std::cerr << "\ntemp: "
+<< temp_int << std::endl;
+assert (temp_int == 4);
 
 sync(io);
-io >> temp_int >> temp_dbl;
-std::cerr << "\n int is: " << temp_int <<
-" doibl is: " << temp_dbl;
+io
+  >> temp_int
+  >> temp_dbl
+  >> temp_str
+  >> temp_raw;
+std::cerr << "\n int is: " << temp_int << " doibl is: " << temp_dbl;
 assert (temp_int == 45);
 assert (temp_dbl == 12.04);
+assert (
+   temp_str
+== std::string("test string")
+);
 
 return 0;
 }

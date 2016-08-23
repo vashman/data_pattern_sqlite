@@ -8,17 +8,17 @@
 #ifndef DATA_PATTERN_SQLITE_CPP
 #define DATA_PATTERN_SQLITE_CPP
 
-#include <string>
 #include "../include/sqlite.hpp"
 
 namespace data_pattern_sqlite {
 
 /* sqlite_exception ctor  */
 sqlite_exception::sqlite_exception (
-  const char * what_arg
+  std::string const _what_arg
 , int _rv
 )
-: std::runtime_error (what_arg)
+: std::runtime_error (_what_arg)
+, err (_what_arg)
 , rv (_rv) {
 }
 
@@ -33,197 +33,26 @@ switch (_rv){
   case SQLITE_ROW:
   case SQLITE_OK: return _rv;
 
-  case SQLITE_ERROR:
-    throw sqlite_exception (
-      "Sqlite: SQL error or missing"
-      " database."
-    , _rv
-    );
-  case SQLITE_BUSY:
-    throw sqlite_exception (
-      "Sqlite: The database file is"
-      " locked."
-    , _rv
-    );
-  case SQLITE_AUTH:
-    throw sqlite_exception (
-      "Sqlite: Authorization denied."
-    , _rv
-    );
-  case SQLITE_TOOBIG:
-    throw sqlite_exception(
-      "Sqlite: String or BLOB exceeds"
-      " size limit."
-    , _rv
-    );
-  case SQLITE_RANGE:
-    throw sqlite_exception (
-      "Sqlite: Nth parameter to"
-      " sqlite3_bind out of range."
-    , _rv
-    );
-  case SQLITE_CONSTRAINT:
-    throw sqlite_exception (
-      "Sqlite: Abort due to constraint"
-      " violation."
-    , _rv
-    );
-  case SQLITE_INTERNAL:
-    throw sqlite_exception (
-      "Sqlite: Internal logic error in"
-      " SQLite."
-    , _rv
-    );
-  case SQLITE_PERM:
-    throw sqlite_exception (
-      "Sqlite: Access permission"
-      " denied."
-    , _rv
-    );
-  case SQLITE_ABORT:
-    throw sqlite_exception (
-      "Sqlite: Callback routine "
-      "requested an abort."
-    , _rv
-    );
-  case SQLITE_LOCKED:
-    throw sqlite_exception (
-      "Sqlite: A table in the database"
-      " is locked."
-    , _rv
-    );
-  case SQLITE_NOMEM:
-    throw sqlite_exception (
-      "Sqlite: A malloc() failed."
-    , _rv
-    );
-  case SQLITE_READONLY:
-    throw sqlite_exception (
-      "Sqlite: Attempt to write a "
-      "readonly database."
-    , _rv
-    );
-  case SQLITE_INTERRUPT:
-    throw sqlite_exception (
-      "Sqlite: Operation terminated by"
-      " sqlite3_interrupt()."
-    , _rv
-    );
-  case SQLITE_IOERR:
-    throw sqlite_exception (
-      "Sqlite: Some kind of disk I/O"
-      " error occurred."
-    , _rv
-    );
-  case SQLITE_CORRUPT:
-    throw sqlite_exception (
-      "Sqlite: The database disk image"
-      " is malformed."
-    , _rv
-    );
-  case SQLITE_NOTFOUND:
-    throw sqlite_exception (
-      "Sqlite: Unknown opcode in"
-      " sqlite3_file_control()."
-    , _rv
-    );
-  case SQLITE_FULL:
-    throw sqlite_exception (
-      "Sqlite: Insertion failed because"
-      " database is full."
-    , _rv
-    );
-  case SQLITE_CANTOPEN:
-    throw sqlite_exception (
-      "Sqlite: Unable to open the"
-      " database file."
-    , _rv
-    );
-  case SQLITE_PROTOCOL:
-    throw sqlite_exception (
-      "Sqlite: Database lock protocol"
-      " error."
-    , _rv
-    );
-  case SQLITE_EMPTY:
-    throw sqlite_exception (
-      "Sqlite: Database is empty."
-    , _rv
-    );
-  case SQLITE_SCHEMA:
-    throw sqlite_exception (
-      "Sqlite: The database schema"
-      " changed."
-    , _rv
-    );
-  case SQLITE_MISMATCH:
-    throw sqlite_exception (
-      "Sqlite: Data type mismatch."
-    , _rv
-    );
-  case SQLITE_MISUSE:
-    throw sqlite_exception (
-      "Sqlite: Library used"
-      " incorrectly."
-    , _rv
-    );
-  case SQLITE_NOLFS:
-    throw sqlite_exception (
-      "Sqlite: Uses OS features not"
-      " supported on host."
-    , _rv
-    );
-  case SQLITE_NOTADB:
-    throw sqlite_exception (
-      "Sqlite: File opened that is not"
-      " a database file."
-    , _rv
-    );
-  case SQLITE_FORMAT:
-    throw sqlite_exception (
-      "Sqlite: Auxiliary database"
-      " format error."
-    , _rv
-    );
   default:
     throw sqlite_exception (
-      "Sqlite error with unknown code."
+     std::string(sqlite3_errstr(_rv))
     , _rv
     );
 }
 }
 } /* bits */
 
-/* sqlite step */
-void
-step (
-  sqlite_statement _stmt
-){
-int temp_state
-  = bits::check_error ( sqlite3_step (
-  _stmt.stmt.get()) );
-
-  if (temp_state == SQLITE_OK)
-  *_stmt.state = SQLITE_DONE;
-  else
-  *_stmt.state = temp_state;
-
-auto temp = sqlite3_column_count (
-  _stmt.stmt.get() );
-  if (temp > 0)
-  _stmt.max_col.reset(new int(temp));
-_stmt.index = 0;
-}
-
 /* sqlite ctor */
 sqlite::sqlite (
   char const * _file
 )
-: db (nullptr, sqlite3_close) {
-sqlite3 * temp;
-  bits::check_error (
-  sqlite3_open(_file, &temp) );
-this->db.reset(temp, sqlite3_close);
+: db (NULL) {
+bits::check_error (
+  sqlite3_open(_file, & (this->db)) );
+}
+
+sqlite::~sqlite(){
+sqlite3_close(db);
 }
 
 } /* data_pattern_sqlite */
