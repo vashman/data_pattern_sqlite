@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <data_pattern/raw.hpp>
 #include "../src/sqlite.cpp"
 
 using data_pattern_sqlite::sqlite;
@@ -68,9 +69,9 @@ auto sel1 ( sqlite_statement (
 ) );
 sel1.step();
 
-int temp_int (sel1.column_int());
+int temp_int (sel1.column <int>());
 assert (temp_int == 2);
-temp_int = sel1.column_int();
+temp_int = sel1.column <int>();
 assert (temp_int == 28);
 
 auto sel2 ( sqlite_statement (
@@ -80,15 +81,14 @@ auto sel2 ( sqlite_statement (
 ));
 sel2.step();
 
-temp_int = sel2.column_int();
-double temp_dbl (sel1.column_double());
-//std::string temp_str
-//  (reinterpret_cast<const char*>(sel1.column_text()));
-//data_pattern::raw temp_raw
-//  (sel1.column_blob());
+temp_int = sel2.column <int>();
+double temp_dbl (sel2.column <double>());
+std::string temp_str
+  (reinterpret_cast<const char*>(sel2.column <const unsigned char*>()));
+data_pattern::raw temp_raw
+ (sel2.column <const void*>(), sel2.column_bytes(static_cast<std::size_t>(sel2.index-1)));
 assert (temp_int == 45);
-//assert (temp_str == std::string("test string"));
-std::cout << "dbl: " << temp_dbl;
+assert (temp_str == std::string("test string"));
 assert (temp_dbl == 12.04);
 
 return 0;

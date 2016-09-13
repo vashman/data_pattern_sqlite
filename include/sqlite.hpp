@@ -53,26 +53,18 @@ sqlite (
 ~sqlite ();
 
 /* copy ctor */
-sqlite (
-  sqlite const &
-) = delete;
+sqlite (sqlite const &) = delete;
 
 /* operator = */
 sqlite &
-operator = (
-  sqlite const &
-) = delete;
+operator = (sqlite const &) = delete;
 
 /* move ctor */
-sqlite (
-  sqlite &&
-) = default;
+sqlite (sqlite &&) = default;
 
 /* move operator = */
 sqlite &
-operator = (
-  sqlite &&
-) = default;
+operator = (sqlite &&) = default;
 
 private:
 
@@ -97,5 +89,6 @@ check_error (
 
 } /* data_pattern_sqlite */
 #include "bits/sqlite_statement.hpp"
+#include "bits/sqlite_iterator.hpp"
 #endif
 

@@ -10,6 +10,63 @@
 
 namespace data_pattern_sqlite {
 
+namespace helper {
+
+template <typename T>
+T column (
+  int
+, sqlite3_stmt *
+);
+
+/* column_int */
+template <>
+int
+column <int> (
+  int
+, sqlite3_stmt *
+);
+
+template <>
+sqlite3_int64
+column <sqlite3_int64> (
+  int
+, sqlite3_stmt *
+);
+
+/* column_double */
+template <>
+double
+column <double> (
+ int
+, sqlite3_stmt *
+);
+
+/* column blob */
+template <>
+const void *
+column <const void *> (
+  int
+, sqlite3_stmt *
+);
+
+/* column text */
+template <>
+const unsigned char *
+column <const unsigned char *> (
+  int
+, sqlite3_stmt *
+);
+
+/* column text 16 */
+template <>
+const char16_t *
+column <const char16_t *> (
+  int
+, sqlite3_stmt *
+);
+
+} /* helper */
+
 /*
  * query_statement wraps an sqlite
  * statement and does some book keeping.
@@ -116,27 +173,11 @@ bind (
 void bind (char const *);
 void bind ();
 
-/* column_int */
-int
-column_int (
-  int
-);
+template <typename T>
+T column ();
 
-sqlite3_int64
-column_int64 (
-  int
-);
-
-/* column_double */
-double
-column_double (
- int
-);
-
-const void *
-column_blob (
-  int
-);
+template <typename T>
+T column (int);
 
 int
 column_bytes (
@@ -145,16 +186,6 @@ column_bytes (
 
 int
 column_bytes16 (
-  int
-);
-
-const unsigned char *
-column_text (
-  int
-);
-
-const void *
-column_text16 (
   int
 );
 
@@ -168,42 +199,26 @@ column_value (
   int
 );
 
-/* column_int */
-int
-column_int ();
-
-sqlite3_int64
-column_int64 ();
-
-/* column_double */
-double
-column_double ();
-
-const void *
-column_blob ();
-
-int
-column_bytes ();
-
-int
-column_bytes16 ();
-
-const unsigned char *
-column_text ();
-
-const void *
-column_text16 ();
-
-int
-column_type ();
-
-sqlite3_value *
-column_value ();
-
 void
 step();
 
 }; /* sqlite satemenmt */
+
+template <typename T>
+T
+sqlite_statement::column (
+){
+return this->column<T> (this->index++);
+}
+
+template <typename T>
+T
+sqlite_statement::column (
+  int _index
+){
+return helper::column<T>
+  (_index, this->stmt);
+}
 
 } /* data pattern sqlite */
 #endif

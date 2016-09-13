@@ -13,52 +13,59 @@
 namespace data_pattern_sqlite {
 
 template <typename T>
-sqlite_iterator;
-
-namespace bits {
-
-template <typename T>
-struct sqlite_iterator_base {
+struct sqlite_iterator {
 
 typedef T value_type;
 typedef 
 
 sqlite_statement * stmt;
+T temp;
 
 sqlite_iterator<T>
-operator ++ (int);
+operator ++ (int) {
+auto temp_iter (*this);
+++this->stmt->index;
+return temp_iter;
+}
 
 sqlite_iterator<T> &
-operator ++ ();
+operator ++ (){
+++this->stmt->index;
+return *this;
+}
 
 sqlite_iterator<T> &
 operator = (
-  T const &
-);
+  T const & _var
+){
+this->stmt->bind
+  (_var, this->stmt->index);
+return *this;
+}
 
 bool
 operator == (
-  sqlite_statement const &
-) const;
+  sqlite_iterator<T> const &
+) const {
+return false;
+}
 
 T &
-operator * ();
+operator * (){
+this->temp =
+  this->stmt.template column <T>
+  (this->stmt->index);
+return this->temp;
+}
 
 T *
-operator -> ();
-
+operator -> (){
+this->temp =
+  this->stmt.template column <T>
+  (this->stmt->index);
+return &this->temp;
+}
 };
-
-bool
-operator != (
-  sqlite_statement const & _lhs
-, sqlite_statement const & _rhs
-);
-
-template <>
-sqlite_iterator <>
-
-} /* bits */
 
 } /* data_pattern_sqlite */
 #endif

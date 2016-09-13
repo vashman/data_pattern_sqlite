@@ -3,7 +3,6 @@ sqlite_statement::operator ++ (int){
 *this->row_on_def = true;
 auto temp (*this);
 ++(index);
-std::cerr << "\n ++Index is: " << index;
 return temp;
 }
 
@@ -11,7 +10,6 @@ sqlite_statement &
 sqlite_statement::operator ++ (){
 ++(index);
 this->row_step();
-std::cerr << "\n ++Index is: " << index;
 return *this;
 }
 
