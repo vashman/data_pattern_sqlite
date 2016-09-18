@@ -78,20 +78,21 @@ int state;
 
 /* 
  * When a statement runs, set this to
- * max column.
+ * result of sqlite3_column_count.
  */
 int max_col;
-bool input_type;
-bool stepped;
-bool row_on_def;
 /*
- * Step the statement if another row is
- * present and the end of the current row
- * is reached, other wise does nothing.
- *
-int 
-row_step();
-*/
+ * True when the statement has been stepped.
+ */
+bool stepped;
+int var_count;
+
+void
+step_if();
+
+void
+step_if_input();
+
 public:
 
 /*
@@ -103,6 +104,9 @@ int index;
 
 int
 get_max_col() const;
+
+bool
+is_stepped() const;
 
 /* ctor */
 explicit
@@ -206,8 +210,8 @@ step();
 
 template <typename T>
 T
-sqlite_statement::column (
-){
+sqlite_statement::column (){
+this->step_if_input();
 return this->column<T> (this->index++);
 }
 

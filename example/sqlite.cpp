@@ -34,10 +34,6 @@ sqlite_statement query1 (
   ", Value INT);"
 );
 
-/* Run the statement. */
-s1.step();
-query1.step();
-
 auto query2 = sqlite_statement (
   db
 , "INSERT INTO test3 "
@@ -49,7 +45,6 @@ query2.bind(45);
 query2.bind("test string");
 query2.bind(12.04);
 query2.bind("0101", 4);
-query2.step(); 
 
 auto query3 = sqlite_statement (
   db
@@ -59,7 +54,6 @@ auto query3 = sqlite_statement (
 
 query3.bind(2);
 query3.bind(28);
-query3.step();
 
 // Retrive data
 
@@ -67,7 +61,6 @@ auto sel1 ( sqlite_statement (
   db
 , "SELECT ID, Value FROM test;"
 ) );
-sel1.step();
 
 int temp_int (sel1.column <int>());
 assert (temp_int == 2);
@@ -79,7 +72,7 @@ auto sel2 ( sqlite_statement (
 , "SELECT Value, dec, str, raw FROM "
   "test3;"
 ));
-sel2.step();
+//sel2.step();
 
 temp_int = sel2.column <int>();
 double temp_dbl (sel2.column <double>());

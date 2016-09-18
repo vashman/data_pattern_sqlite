@@ -13,13 +13,39 @@
 namespace data_pattern_sqlite {
 
 template <typename T>
-struct sqlite_iterator {
+class sqlite_iterator {
 
 typedef T value_type;
-typedef 
+//typedef 
 
 sqlite_statement * stmt;
 T temp;
+int var_count;
+
+public:
+
+sqlite_iterator (
+  sqlite_statement & _stmt
+)
+: stmt (& _stmt)
+, temp ()
+, var_count (0)
+{
+  // Used output or input statment without result set.
+  if (_stmt.is_stepped() && (_stmt.get_max_col() <= 0))
+  throw "fail";
+}
+
+sqlite_iterator (sqlite_iterator<T> const &) = default;
+sqlite_iterator (sqlite_iterator<T> &&) = default;
+
+sqlite_iterator<T> &
+operator = (sqlite_iterator<T> const &) = default;
+
+sqlite_iterator<T> &
+operator = (sqlite_iterator<T> &&) = default;
+
+~sqlite_iterator() = default;
 
 sqlite_iterator<T>
 operator ++ (int) {

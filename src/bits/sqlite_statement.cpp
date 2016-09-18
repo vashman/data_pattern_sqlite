@@ -27,9 +27,8 @@ sqlite_statement::sqlite_statement (
    */
 , state (SQLITE_MISUSE)
 , max_col (0)
-, input_type (false)
 , stepped(false)
-, row_on_def(false)
+, var_count (0)
 // set to 1 for bind / output statements
 , index (0) {
 
@@ -45,21 +44,25 @@ sqlite_statement::sqlite_statement (
  */
 , 0
 ));
+  if (this->stmt == NULL)
+  throw std::string("null stmt stepped.");
+
+this->var_count
+  = sqlite3_bind_parameter_count(this->stmt);
+  /*
+   * If the statement has no parameters to bind, then step right away.* 
+   * if step finds a result, the statement will be treated like a input statement. otherwise complete.
+   */
+ if (0 == var_count) this->step();
 }
 
-sqlite_statement::~sqlite_statement (
-){
+sqlite_statement::~sqlite_statement (){
 sqlite3_finalize((this->stmt));
 }
 
 /* sqlite step */
 void
-sqlite_statement::step (
-){
-  if (this->stmt == NULL)
-  throw
-  std::string("null stmt stepped.");
-
+sqlite_statement::step (){
 this->stepped = true;
 
 this->state = bits::check_error (
@@ -68,9 +71,24 @@ this->state = bits::check_error (
 this->max_col
   = sqlite3_column_count (this->stmt);
 
-  if (this->max_col > 0){
-  this->input_type = true;
+  if (this->max_col > 0)
   this->index = 0;
+}
+
+void
+sqlite_statement::step_if (){
+  if (0 == --this->var_count){
+  this->step();
+  }
+}
+
+void
+sqlite_statement::step_if_input (){
+  if (
+     (this->state == SQLITE_ROW)
+  && (this->index >= this->max_col)
+  ){
+  this->step();
   }
 }
 
@@ -91,20 +109,15 @@ sqlite_statement::bind (
   int _var
 ){
 this->bind (++this->index, _var);
+this->step_if();
 }
 
 /* */
 void
-sqlite_dtor_data (
-  void *
-);
+sqlite_dtor_data (void *);
 
 void
-sqlite_dtor_data (
-  void * _data
-){
-// do nothing
-}
+sqlite_dtor_data (void * _data){/* do nothing */}
 
 /* sqlite_statement bind_blob */
 void
@@ -129,6 +142,7 @@ sqlite_statement::bind (
 , int _size
 ){
 this->bind(++this->index, _blob, _size);
+this->step_if();
 }
 
 /* sqlite_statement bind string */
@@ -161,6 +175,7 @@ sqlite_statement::bind (
   char const * _str
 ){
 this->bind (++this->index, _str);
+this->step_if();
 }
 
 /* sqlite_statement bind double */
@@ -180,11 +195,18 @@ sqlite_statement::bind (
   double _var
 ){
 this->bind(++this->index, _var);
+this->step_if();
 }
 
 void
 sqlite_statement::bind (){
 this->bind(++this->index, nullptr);
+this->step_if();
+}
+
+bool
+sqlite_statement::is_stepped () const {
+return this->stepped;
 }
 
 namespace helper {

@@ -116,10 +116,10 @@ data_pattern::raw temp_raw;
 double temp_dbl;
 
 sync(io);
-io >> temp_int; std::cerr << "\ntemp: " << temp_int;
+io >> temp_int;
 assert (temp_int == 1);
-io >> temp_int; std::cerr << "\ntemp: "
-<< temp_int << std::endl;
+
+io >> temp_int;
 assert (temp_int == 4);
 
 sync(io);
@@ -128,12 +128,11 @@ io
   >> temp_dbl
   >> temp_str
   >> temp_raw;
-std::cerr << "\n int is: " << temp_int << " doibl is: " << temp_dbl;
+
 assert (temp_int == 45);
 assert (temp_dbl == 12.04);
 assert (
-   temp_str
-== std::string("test string")
+  temp_str == std::string("test string")
 );
 
 return 0;
