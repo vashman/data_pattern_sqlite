@@ -306,17 +306,26 @@ int
 sqlite_statement::get_max_col () const {
 return this->max_col;
 }
-/*
+
 int
-sqlite_statement::row_step(){
-  if (*this->state == SQLITE_ROW){
-    if (this->index >= *this->max_col){
-    step(*this);
-    }
+sqlite_statement::get_var_count () const {
+return this->var_count;
+}
+
+bool
+sqlite_statement::is_done () const {
+  if (! this->stepped) return false;
+
+  if (
+    (  (this->state != SQLITE_DONE)
+    && (this->state != SQLITE_OK)
+    )
+  && (this->index < this->max_col)
+  ){
   return false;
   }
 return true;
-}*/
+}
 
 } /* data pattern_sqlite */
 #endif

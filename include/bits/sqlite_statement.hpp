@@ -105,8 +105,14 @@ int index;
 int
 get_max_col() const;
 
+int
+get_var_count() const;
+
 bool
 is_stepped() const;
+
+bool
+is_done() const;
 
 /* ctor */
 explicit
@@ -116,8 +122,8 @@ sqlite_statement (
 );
 
 /* ctor */
-//explicit
-//sqlite_statement () = default;
+explicit
+sqlite_statement () = default;
 
 /* ctor copy */
 sqlite_statement (
@@ -126,6 +132,12 @@ sqlite_statement (
 
 /* ctor move */
 sqlite_statement (
+  sqlite_statement &&
+) = default;
+
+/* operator = */
+sqlite_statement &
+operator = (
   sqlite_statement &&
 ) = default;
 

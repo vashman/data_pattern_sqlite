@@ -5,135 +5,83 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <vector>
 #include <iostream>
 #include <cassert>
-#include <data_pattern/data_model.hpp>
 #include <data_pattern/raw.hpp>
-#include "../src/sqlite.cpp"
+#include "../include/model_sqlite.hpp"
 
-using data_pattern_sqlite::sqlite;
-using data_pattern_sqlite::sqlite_statement;
-using data_pattern::make_data_model;
-using data_pattern::model_state;
-
-std::vector <std::string> query = {
-  "CREATE TABLE IF NOT EXISTS "
-  "test3 (Value INT, str TEXT, dec REAL"
-  ", raw Blob);"
-,
-  "CREATE TABLE IF NOT EXISTS test"
-  "(ID INT PRIMARY KEY NOT NULL"
-  ", Value INT);"
-,
-  "INSERT INTO test3 "
-  "(Value, str, dec, raw) Values"
-  " (?,?,?,?);"
-,
-  "INSERT INTO test "
-  "(ID, Value) Values (?,?);"
-,
-  "SELECT ID, Value FROM test;"
-,
-  "SELECT Value, dec, str, raw FROM "
-  "test3;"
-};
-
-sqlite
-create_db (
-  sqlite _db
-);
-
-sqlite
-create_db (
-  sqlite _db
-){
-step (sqlite_statement(_db, query[0].c_str()));
-step (sqlite_statement(_db, query[1].c_str()));
-return _db;
-}
+using data_pattern_sqlite::make_sqlite_statement_model;
+using data_pattern::raw;
+using std::string;
 
 int main () {
-std::cerr << std::boolalpha;
-sqlite_statement istmt, ostmt;
-bool inflag = false;
-unsigned int stage = 2;
+char const * const db = "testdata";
 
-auto io ( make_data_model (
-  create_db(sqlite ("testdata"))
-// input iterator
-, [&](sqlite & _db)
-  -> sqlite_statement & {
-   if (istmt == sqlite_statement()){
-   inflag = true;
-   std::cerr << "\nI: creating istmt: " << stage << " \"" << query[stage].c_str();
-   istmt = sqlite_statement (
-     _db, query[stage].c_str());
-  step(istmt);
-  }
-  return istmt;
-  }
-// output iterator
-, [&](sqlite & _db)
-  -> sqlite_statement & {
-   if (ostmt == sqlite_statement()){
-   ostmt = sqlite_statement (
-     _db, query[stage].c_str() );
-   }
-  return ostmt;
-  }
-// sync
-, [&](sqlite & _db, model_state & _state){
-std::cerr << " SYNC ";
-    if (ostmt != sqlite_statement()){
-    step(ostmt); ++stage;
-    }
-    if (istmt == sqlite_statement() && inflag){
-    std::cerr << "\nI: input synced, stage: ";
-//    _state = model_state::end;
-    ++stage;
-    inflag = false;
-    std::cerr << stage;
-    }
-std::cerr << " END ";
-  }
+/* Create the table if it does not exist
+  yet.
+*/
+
+auto s1 = make_sqlite_statement_model (
+  db
+, "CREATE TABLE IF NOT EXISTS test3"
+  "(Value INT, str TEXT, dec REAL, "
+  "raw Blob);"
+);
+
+auto query1 = make_sqlite_statement_model (
+  db
+, "CREATE TABLE IF NOT EXISTS test"
+  "(ID INT PRIMARY KEY NOT NULL"
+  ", Value INT);"
+);
+
+auto query2 = make_sqlite_statement_model (
+  db
+, "INSERT INTO test3 "
+  "(Value, str, dec, raw) Values"
+  " (?,?,?,?);"
+);
+
+query2 << 45 << "test string"
+<< 12.04 << raw("0101", 4);
+
+auto query3 = make_sqlite_statement_model (
+  db
+, "INSERT INTO test "
+  "(ID, Value) Values (?, ?);"
+);
+
+query3 << 2 << 28;
+
+// Retrive data
+
+auto sel1 ( make_sqlite_statement_model (
+  db
+, "SELECT ID, Value FROM test;"
 ) );
 
-io
-<< 45
-<< std::string("test string")
-<< 12.04
-<< data_pattern::raw("0101", 4);
-sync(io);
-
-/* bind data into data_model */
-io << 1 << 4;
-sync(io);
-
 int temp_int;
-std::string temp_str;
-data_pattern::raw temp_raw;
+sel1 >> temp_int;
+assert (temp_int == 2);
+sel1 >> temp_int;
+assert (temp_int == 28);
+
+auto sel2 ( make_sqlite_statement_model (
+  db
+, "SELECT Value, dec, str, raw FROM "
+  "test3;"
+));
+
+sel2 >> temp_int;
 double temp_dbl;
-
-sync(io);
-io >> temp_int;
-assert (temp_int == 1);
-
-io >> temp_int;
-assert (temp_int == 4);
-
-sync(io);
-io
-  >> temp_int
-  >> temp_dbl
-  >> temp_str
-  >> temp_raw;
-
+sel2 >> temp_dbl;
+std::string temp_str;
+sel2 >> temp_str;
+data_pattern::raw temp_raw;
+sel2 >> temp_raw;
 assert (temp_int == 45);
+assert (temp_str == std::string("test string"));
 assert (temp_dbl == 12.04);
-assert (
-  temp_str == std::string("test string")
-);
 
 return 0;
 }
