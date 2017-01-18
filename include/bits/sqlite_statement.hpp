@@ -1,6 +1,6 @@
 //
 
-//          Copyright Sundeep S. Sangha 2013 - 2014.
+//          Copyright Sundeep S. Sangha 2013 - 2017.
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -9,6 +9,174 @@
 #define DATA_PATTERN_SQLITE_STATEMENT_HPP
 
 namespace data_pattern_sqlite {
+
+/*
+ * Wraps an sqlite statement and does book keeping.
+ */
+class sqlite_statement {
+
+sqlite3_stmt * stmt;
+int state;
+sqlite db;
+
+/* 
+ * When a statement runs, set this to
+ * result of sqlite3_column_count.
+ */
+int max_col;
+bool stepped; //True when the statement has been stepped.
+int var_count;
+
+void
+step_if();
+
+void
+step_if_input();
+
+public:
+
+/*
+ * Column counter used to keep track
+ * of which column in the current
+ * table is currently active.
+ */
+int index;
+
+int
+get_max_col() const;
+
+int
+get_var_count() const;
+
+bool
+is_stepped() const;
+
+bool
+is_done() const;
+
+/* ctor */
+explicit
+sqlite_statement (
+  sqlite
+, char const * // query
+);
+
+/* ctor */
+explicit
+sqlite_statement () = default;
+
+/* ctor copy */
+sqlite_statement (
+  sqlite_statement const &
+) = delete;
+
+/* ctor move */
+sqlite_statement (
+  sqlite_statement &&
+) = default;
+
+/* operator = */
+sqlite_statement &
+operator = (
+  sqlite_statement &&
+) = default;
+
+/* operator = */
+sqlite_statement &
+operator = (
+  sqlite_statement const &
+) = delete;
+
+/* dtor */
+~sqlite_statement();
+
+/* bind double */
+void
+bind (
+  int
+, double
+);
+
+/* bind int */
+void
+bind (
+  int
+, int
+);
+
+/* bind void * */
+void
+bind (
+  int
+, void const *
+, int
+);
+
+/* bind char * and bind null */
+void
+bind (
+  int
+, char const *
+);
+
+void
+bind (
+  char const *
+);
+
+void
+bind (
+  int
+);
+
+void
+bind (
+  double
+);
+
+void
+bind (
+  void const *
+, int
+);
+
+void
+bind ();
+
+template <typename T>
+T
+column ();
+
+template <typename T>
+T
+column (
+  int
+);
+
+int
+column_bytes (
+  int
+);
+
+int
+column_bytes16 (
+  int
+);
+
+int
+column_type (
+  int
+);
+
+sqlite3_value *
+column_value (
+  int
+);
+
+void
+step();
+
+}; /* sqlite satemenmt */
 
 namespace helper {
 
@@ -65,177 +233,7 @@ column <const char16_t *> (
 , sqlite3_stmt *
 );
 
-} /* helper */
-
-/*
- * query_statement wraps an sqlite
- * statement and does some book keeping.
- */
-class sqlite_statement {
-
-sqlite3_stmt * stmt;
-int state;
-
-/* 
- * When a statement runs, set this to
- * result of sqlite3_column_count.
- */
-int max_col;
-/*
- * True when the statement has been stepped.
- */
-bool stepped;
-int var_count;
-
-void
-step_if();
-
-void
-step_if_input();
-
-public:
-
-/*
- * Column counter used to keep track
- * of which column in the current
- * table is currently active.
- */
-int index;
-
-int
-get_max_col() const;
-
-int
-get_var_count() const;
-
-bool
-is_stepped() const;
-
-bool
-is_done() const;
-
-/* ctor */
-explicit
-sqlite_statement (
-  sqlite &
-, char const * // query
-);
-
-/* ctor */
-explicit
-sqlite_statement () = default;
-
-/* ctor copy */
-sqlite_statement (
-  sqlite_statement const &
-) = delete;
-
-/* ctor move */
-sqlite_statement (
-  sqlite_statement &&
-) = default;
-
-/* operator = */
-sqlite_statement &
-operator = (
-  sqlite_statement &&
-) = default;
-
-/* operator = */
-sqlite_statement &
-operator = (
-  sqlite_statement const &
-) = delete;
-
-/* dtor */
-~sqlite_statement();
-
-/* bind double */
-void
-bind (
-  int
-, double
-);
-
-void
-bind (double);
-
-/* bind int */
-void
-bind (
-  int
-, int
-);
-
-void bind (int);
-
-/* bind void * */
-void
-bind (
-  int
-, void const *
-, int
-);
-
-void bind (void const *, int);
-
-/* bind char * and bind null */
-void
-bind (
-  int
-, char const *
-);
-
-void bind (char const *);
-void bind ();
-
-template <typename T>
-T column ();
-
-template <typename T>
-T column (int);
-
-int
-column_bytes (
-  int
-);
-
-int
-column_bytes16 (
-  int
-);
-
-int
-column_type (
-  int
-);
-
-sqlite3_value *
-column_value (
-  int
-);
-
-void
-step();
-
-}; /* sqlite satemenmt */
-
-template <typename T>
-T
-sqlite_statement::column (){
-this->step_if_input();
-return this->column<T> (this->index++);
-}
-
-template <typename T>
-T
-sqlite_statement::column (
-  int _index
-){
-return helper::column<T>
-  (_index, this->stmt);
-}
-
-} /* data pattern sqlite */
+} /* helper */ } /* data pattern sqlite */
 #endif
+#include "sqlite_statement.tcc"
 

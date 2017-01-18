@@ -1,6 +1,6 @@
 //
 
-//          Copyright Sundeep S. Sangha 2015.
+//          Copyright Sundeep S. Sangha 2015 - 2017.
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -11,34 +11,29 @@
 #include "../src/sqlite.cpp"
 
 using data_pattern_sqlite::sqlite;
+using data_pattern_sqlite::open_database;
 using data_pattern_sqlite::sqlite_statement;
 
 int main () {
-sqlite db("testdata");
+sqlite db = open_database("testdata");
 
-/* Create the table if it does not exist
-  yet.
-*/
-
+/* Create the table if it does not exist yet. */
 sqlite_statement s1 (
   db
 , "CREATE TABLE IF NOT EXISTS test3"
-  "(Value INT, str TEXT, dec REAL, "
-  "raw Blob);"
+  "(Value INT, str TEXT, dec REAL, raw Blob);"
 );
 
 sqlite_statement query1 (
   db
 , "CREATE TABLE IF NOT EXISTS test"
-  "(ID INT PRIMARY KEY NOT NULL"
-  ", Value INT);"
+  "(ID INT PRIMARY KEY NOT NULL, Value INT);"
 );
 
 auto query2 = sqlite_statement (
   db
 , "INSERT INTO test3 "
-  "(Value, str, dec, raw) Values"
-  " (?,?,?,?);"
+  "(Value, str, dec, raw) Values (?,?,?,?);"
 );
 
 query2.bind(45);
@@ -47,39 +42,32 @@ query2.bind(12.04);
 query2.bind("0101", 4);
 
 auto query3 = sqlite_statement (
-  db
-, "INSERT INTO test "
-  "(ID, Value) Values (?, ?);"
+  db, "INSERT INTO test (ID, Value) Values (?, ?);"
 );
 
 query3.bind(2);
 query3.bind(28);
 
 // Retrive data
+auto select1 =
+  sqlite_statement (db, "SELECT ID, Value FROM test;");
 
-auto sel1 ( sqlite_statement (
-  db
-, "SELECT ID, Value FROM test;"
-) );
-
-int temp_int (sel1.column <int>());
+int temp_int (select1.column<int>());
 assert (temp_int == 2);
-temp_int = sel1.column <int>();
+temp_int = select1.column<int>();
 assert (temp_int == 28);
 
-auto sel2 ( sqlite_statement (
+auto select2 ( sqlite_statement (
   db
-, "SELECT Value, dec, str, raw FROM "
-  "test3;"
+, "SELECT Value, dec, str, raw FROM test3;"
 ));
-//sel2.step();
 
-temp_int = sel2.column <int>();
-double temp_dbl (sel2.column <double>());
+temp_int = select2.column <int>();
+double temp_dbl (select2.column <double>());
 std::string temp_str
-  (reinterpret_cast<const char*>(sel2.column <const unsigned char*>()));
-data_pattern::raw temp_raw
- (sel2.column <const void*>(), sel2.column_bytes(static_cast<std::size_t>(sel2.index-1)));
+  (reinterpret_cast<const char*>(select2.column <const unsigned char*>()));
+data_pattern::raw<unsigned char> temp_raw
+ (static_cast<const unsigned char*>(select2.column <const void*>()), select2.column_bytes(static_cast<std::size_t>(select2.index-1)));
 assert (temp_int == 45);
 assert (temp_str == std::string("test string"));
 assert (temp_dbl == 12.04);

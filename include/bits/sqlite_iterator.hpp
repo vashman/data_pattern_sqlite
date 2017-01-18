@@ -1,6 +1,6 @@
 //
 
-//          Copyright Sundeep S. Sangha 2013 - 2014.
+//          Copyright Sundeep S. Sangha 2013 - 2017.
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -16,8 +16,11 @@ namespace data_pattern_sqlite {
 template <typename T>
 class sqlite_iterator {
 
+typedef std::input_iterator_tag iterator_catagory;
 typedef T value_type;
-//typedef 
+typedef std::size_t difference_type;
+typedef T * pointer;
+typedef T & reference;
 
 std::shared_ptr<sqlite_statement> stmt;
 T temp;
@@ -25,32 +28,30 @@ int var_count;
 
 public:
 
+explicit
 sqlite_iterator (
   sqlite_statement & _stmt
-)
-: stmt (& _stmt, [](sqlite_statement*){})
-, temp ()
-, var_count (0)
-{
-  // Used output or input statment without result set.
-  if (_stmt.is_stepped() && (_stmt.get_max_col() <= 0))
-  throw "fail";
-}
+);
 
-sqlite_iterator ()
-: stmt (nullptr)
-, temp ()
-, var_count ()
-{}
+sqlite_iterator ();
 
-sqlite_iterator (sqlite_iterator<T> const &) = default;
-sqlite_iterator (sqlite_iterator<T> &&) = default;
+sqlite_iterator (
+  sqlite_iterator const &
+) = default;
 
-sqlite_iterator<T> &
-operator = (sqlite_iterator<T> const &) = default;
+sqlite_iterator (
+  sqlite_iterator &&
+) = default;
 
-sqlite_iterator<T> &
-operator = (sqlite_iterator<T> &&) = default;
+sqlite_iterator &
+operator = (
+  sqlite_iterator const &
+) = default;
+
+sqlite_iterator &
+operator = (
+  sqlite_iterator &&
+) = default;
 
 ~sqlite_iterator() = default;
 
@@ -71,8 +72,7 @@ sqlite_iterator<T> &
 operator = (
   T const & _var
 ){
-this->stmt->bind
-  (_var, this->stmt->index);
+this->stmt->bind(_var, this->stmt->index);
 return *this;
 }
 
@@ -115,4 +115,5 @@ return &this->temp;
 
 } /* data_pattern_sqlite */
 #endif
+#include "sqlite_iterator.tcc"
 

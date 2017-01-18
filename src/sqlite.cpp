@@ -1,6 +1,6 @@
 // data_model sqlite implementation
 
-//          Copyright Sundeep S. Sangha 2013 - 2014.
+//          Copyright Sundeep S. Sangha 2013 - 2017.
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
@@ -22,10 +22,9 @@ sqlite_exception::sqlite_exception (
 , rv (_rv) {
 }
 
-namespace bits {
 /* check for sqlite error */
 int
-check_error (
+sqlite_check_error (
   int _rv
 ){
 switch (_rv){
@@ -34,25 +33,18 @@ switch (_rv){
   case SQLITE_OK: return _rv;
 
   default:
-    throw sqlite_exception (
-     std::string(sqlite3_errstr(_rv))
-    , _rv
-    );
+  throw
+  sqlite_exception (std::string(sqlite3_errstr(_rv)), _rv);
 }
 }
-} /* bits */
 
-/* sqlite ctor */
-sqlite::sqlite (
+sqlite
+open_database (
   char const * _file
-)
-: db (NULL) {
-bits::check_error (
-  sqlite3_open(_file, & (this->db)) );
-}
-
-sqlite::~sqlite(){
-sqlite3_close(db);
+){
+sqlite3 * temp = NULL;
+sqlite_check_error (sqlite3_open(_file, &(temp)));
+return sqlite {temp, sqlite3_close};
 }
 
 } /* data_pattern_sqlite */
