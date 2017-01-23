@@ -1,15 +1,25 @@
 //
 
-#ifndef DATA_PATTERN_SQLITE_MODEL_HPP
-#define DATA_PATTERN_SQLITE_MODEL_HPP
+#ifndef DATA_PATTERN_SQLITE_LOCALE_HPP
+#define DATA_PATTERN_SQLITE_LOCALE_HPP
 
-#include <data_pattern/data_model.hpp>
+#include <data_pattern/model.hpp>
 #include <data_pattern/raw.hpp>
+#include <typesystems/type_map.hpp>
+#include <tuple>
 #include <string>
 #include <vector>
 #include "sqlite.hpp"
 
 namespace data_pattern_sqlite {
+
+using sqlite_locale = typesystems::type_map <
+  std::tuple <>
+, int, data_pattern::end_iterator_tag<int>, data_pattern::sync_iterator_tag<int>
+, double
+, std::string
+, data_pattern::raw
+>;
 
 auto ilam = [](data_pattern::model<std::tuple<sqlite, sqlite_statement>> & _mdl){
 return typesystems::make_type_map

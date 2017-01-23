@@ -5,8 +5,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_BITS_SQLITE_FWD_HPP
-#define DATA_PATTERN_BITS_SQLITE_FWD_HPP
+#ifndef DATA_PATTERN_SQLITE_BITS_SQLITE_FWD_HPP
+#define DATA_PATTERN_SQLITE_BITS_SQLITE_FWD_HPP
 
 #include <memory>
 extern "C"{
@@ -24,9 +24,7 @@ class sqlite_iterator;
 using sqlite = std::shared_ptr<sqlite3>;
 
 sqlite
-open_database (
-  char const * 
-);
+open_database (char const *);
 
 /*
  * Throws an exception for an sqlite
@@ -34,9 +32,7 @@ open_database (
  * nothing exceptional happens.
  */
 int
-sqlite_check_error (
-  int
-);
+sqlite_check_error (int);
 
 } /* data_pattern_sqlite */
 #endif

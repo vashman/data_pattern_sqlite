@@ -5,8 +5,10 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_SQLITE_STATEMENT_HPP
-#define DATA_PATTERN_SQLITE_STATEMENT_HPP
+#ifndef DATA_PATTERN_SQLITE_SQLITE_STATEMENT_HPP
+#define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_HPP
+
+#include <string>
 
 namespace data_pattern_sqlite {
 
@@ -23,30 +25,29 @@ sqlite db;
  * When a statement runs, set this to
  * result of sqlite3_column_count.
  */
-int max_col;
+int column_count;
 bool stepped; //True when the statement has been stepped.
-int var_count;
+int bind_parameter_count;
 
 void
-step_if();
+step_if_bind_done();
 
 void
-step_if_input();
+step_if_more_input();
 
 public:
 
 /*
- * Column counter used to keep track
- * of which column in the current
- * table is currently active.
+ * Column counter used to keep track of which column in the
+ * current table is currently active.
  */
 int index;
 
 int
-get_max_col() const;
+get_column_count() const;
 
 int
-get_var_count() const;
+get_bind_parameter_count() const;
 
 bool
 is_stepped() const;
@@ -54,91 +55,59 @@ is_stepped() const;
 bool
 is_done() const;
 
-/* ctor */
-explicit
-sqlite_statement (
-  sqlite
-, char const * // query
-);
+bool
+is_bind_done() const;
+
+bool
+has_more_input() const;
 
 /* ctor */
 explicit
+sqlite_statement (sqlite, char const *);
 sqlite_statement () = default;
-
-/* ctor copy */
-sqlite_statement (
-  sqlite_statement const &
-) = delete;
-
-/* ctor move */
-sqlite_statement (
-  sqlite_statement &&
-) = default;
-
-/* operator = */
-sqlite_statement &
-operator = (
-  sqlite_statement &&
-) = default;
-
-/* operator = */
-sqlite_statement &
-operator = (
-  sqlite_statement const &
-) = delete;
-
-/* dtor */
+sqlite_statement (sqlite_statement const &) = delete;
+sqlite_statement (sqlite_statement &&) = default;
 ~sqlite_statement();
+
+sqlite_statement &
+operator = (sqlite_statement &&) = default;
+
+sqlite_statement &
+operator = (sqlite_statement const &) = delete;
 
 /* bind double */
 void
-bind (
-  int
-, double
-);
+bind (int, double);
 
 /* bind int */
 void
-bind (
-  int
-, int
-);
+bind (int, int);
 
 /* bind void * */
 void
-bind (
-  int
-, void const *
-, int
-);
+bind (int, void const *, int);
 
 /* bind char * and bind null */
 void
-bind (
-  int
-, char const *
-);
+bind (int, char const *);
 
 void
-bind (
-  char const *
-);
+bind (int, std::string);
 
 void
-bind (
-  int
-);
+bind (std::string);
 
 void
-bind (
-  double
-);
+bind (char const *);
 
 void
-bind (
-  void const *
-, int
-);
+bind (int);
+
+void
+bind (double);
+
+void
+bind (void const *, int);
 
 void
 bind ();
@@ -149,29 +118,19 @@ column ();
 
 template <typename T>
 T
-column (
-  int
-);
+column (int);
 
 int
-column_bytes (
-  int
-);
+column_bytes (int);
 
 int
-column_bytes16 (
-  int
-);
+column_bytes16 (int);
 
 int
-column_type (
-  int
-);
+column_type (int);
 
 sqlite3_value *
-column_value (
-  int
-);
+column_value (int);
 
 void
 step();
@@ -181,57 +140,37 @@ step();
 namespace helper {
 
 template <typename T>
-T column (
-  int
-, sqlite3_stmt *
-);
+T
+column (int, sqlite3_stmt *);
 
 /* column_int */
 template <>
 int
-column <int> (
-  int
-, sqlite3_stmt *
-);
+column <int> (int, sqlite3_stmt *);
 
 template <>
 sqlite3_int64
-column <sqlite3_int64> (
-  int
-, sqlite3_stmt *
-);
+column <sqlite3_int64> (int, sqlite3_stmt *);
 
 /* column_double */
 template <>
 double
-column <double> (
- int
-, sqlite3_stmt *
-);
+column <double> (int, sqlite3_stmt *);
 
 /* column blob */
 template <>
 const void *
-column <const void *> (
-  int
-, sqlite3_stmt *
-);
+column <const void *> (int, sqlite3_stmt *);
 
 /* column text */
 template <>
 const unsigned char *
-column <const unsigned char *> (
-  int
-, sqlite3_stmt *
-);
+column <const unsigned char *> (int, sqlite3_stmt *);
 
 /* column text 16 */
 template <>
 const char16_t *
-column <const char16_t *> (
-  int
-, sqlite3_stmt *
-);
+column <const char16_t *> (int, sqlite3_stmt *);
 
 } /* helper */ } /* data pattern sqlite */
 #endif

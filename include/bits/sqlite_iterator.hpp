@@ -5,8 +5,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_SQLITE_ITERATOR_HPP
-#define DATA_PATTERN_SQLITE_ITERATOR_HPP
+#ifndef DATA_PATTERN_SQLITE_BITS_SQLITE_ITERATOR_HPP
+#define DATA_PATTERN_SQLITE_BITS_SQLITE_ITERATOR_HPP
 
 #include <iterator>
 #include <memory>
@@ -16,102 +16,130 @@ namespace data_pattern_sqlite {
 template <typename T>
 class sqlite_iterator {
 
-typedef std::input_iterator_tag iterator_catagory;
-typedef T value_type;
-typedef std::size_t difference_type;
-typedef T * pointer;
-typedef T & reference;
-
-std::shared_ptr<sqlite_statement> stmt;
-T temp;
-int var_count;
-
 public:
 
-explicit
-sqlite_iterator (
-  sqlite_statement & _stmt
-);
+struct proxy {
 
-sqlite_iterator ();
+T temp;
+int index;
+std::weak_ptr<sqlite_statement> stmt;
 
-sqlite_iterator (
-  sqlite_iterator const &
-) = default;
-
-sqlite_iterator (
-  sqlite_iterator &&
-) = default;
-
-sqlite_iterator &
-operator = (
-  sqlite_iterator const &
-) = default;
-
-sqlite_iterator &
-operator = (
-  sqlite_iterator &&
-) = default;
-
-~sqlite_iterator() = default;
-
-sqlite_iterator<T>
-operator ++ (int) {
-auto temp_iter (*this);
-++this->stmt->index;
-return temp_iter;
-}
-
-sqlite_iterator<T> &
-operator ++ (){
-++this->stmt->index;
-return *this;
-}
-
-sqlite_iterator<T> &
-operator = (
+proxy (
   T const & _var
-){
-this->stmt->bind(_var, this->stmt->index);
-return *this;
-}
+, int _index
+, std::shared_ptr<sqlite_statement> _stmt
+)
+: temp (_var)
+, index (_index)
+, stmt (_stmt)
+{}
 
-bool
-operator == (
-  sqlite_iterator<T> const & _rhs
-) const {
-  if (_rhs.stmt == nullptr && this->stmt == nullptr)
-  return true;
-  else if (_rhs.stmt == nullptr)
-  return this->stmt->is_done();
-  else if (this->stmt == nullptr)
-  return _rhs.is_done();
-return (this->stmt->is_done() && _rhs.stmt->is_done());
-}
+explicit
+proxy (
+  std::shared_ptr<sqlite_statement> _stmt
+)
+: temp ()
+, index()
+, stmt (_stmt)
+{}
 
-bool
-operator != (
-  sqlite_iterator<T> const & _rhs
-) const {
-return !(*this == _rhs);
-}
+~proxy() = default;
+proxy (proxy const &) = default;
+proxy (proxy &&) = default;
+proxy & operator = (proxy const &) = delete;
+proxy & operator = (proxy &&) = default;
 
-T &
-operator * (){
-this->temp =
-  this->stmt->template column <T>
-  (this->stmt->index);
+operator T(){
+auto st = this->stmt.lock();
+this->temp = st-> template column<T>(this->index);
 return this->temp;
 }
 
 T *
 operator -> (){
-this->temp =
-  this->stmt->template column <T>
-  (this->stmt->index);
 return &this->temp;
 }
-};
+
+proxy &
+operator = (
+  T const & _var
+){
+auto st = this->stmt.lock();
+st->bind(this->index, _var);
+return *this;
+}
+
+}; /* proxy */
+
+private:
+
+std::shared_ptr<sqlite_statement> stmt;
+proxy temp;
+
+public:
+
+typedef std::input_iterator_tag iterator_catagory;
+typedef proxy value_type;
+typedef std::size_t difference_type;
+typedef proxy * pointer;
+typedef proxy & reference;
+
+explicit
+sqlite_iterator (sqlite_statement & _stmt);
+sqlite_iterator ();
+~sqlite_iterator() = default;
+sqlite_iterator (sqlite_iterator const &) = default;
+sqlite_iterator (sqlite_iterator &&) = default;
+
+sqlite_iterator &
+operator = (sqlite_iterator const &) = default;
+
+sqlite_iterator &
+operator = (sqlite_iterator &&) = default;
+
+sqlite_iterator
+operator ++ (int) {
+auto temp_iter (*this);
+++this->temp.index;
+return temp_iter;
+}
+
+sqlite_iterator &
+operator ++ (){
+++this->temp.index;
+return *this;
+}
+
+bool
+operator == (
+  sqlite_iterator const & _rhs
+) const {
+  if (_rhs.stmt == nullptr && this->stmt == nullptr)
+  return true;
+  else if (_rhs.stmt == nullptr)
+  return this->stmt->is_done();
+  else if (this->stmt == nullptr) return _rhs.is_done();
+
+return (this->stmt->is_done() && _rhs.stmt->is_done());
+}
+
+bool
+operator != (
+  sqlite_iterator const & _rhs
+) const {
+return !(*this == _rhs);
+}
+
+proxy &
+operator * (){
+return this->temp;
+}
+
+proxy *
+operator -> (){
+return &this->temp;
+}
+}; /* sqlite iterator */
 
 } /* data_pattern_sqlite */
 #endif

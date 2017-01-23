@@ -9,9 +9,8 @@
 #define DATA_PATTERN_SQLITE_HPP
 
 #include "bits/sqlite_fwd.hpp"
-//#include "bits/sqlite.hpp"
 #include "bits/sqlite_statement.hpp"
 #include "bits/sqlite_exception.hpp"
-//#include "bits/sqlite_iterator.hpp"
+#include "bits/sqlite_iterator.hpp"
 #endif
 

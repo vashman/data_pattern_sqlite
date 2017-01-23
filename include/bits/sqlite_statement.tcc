@@ -5,15 +5,16 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_SQLITE_STATEMENT_TCC
-#define DATA_PATTERN_SQLITE_STATEMENT_TCC
+#ifndef DATA_PATTERN_SQLITE_SQLITE_STATEMENT_TCC
+#define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_TCC
 
 namespace data_pattern_sqlite {
 
 template <typename T>
 T
-sqlite_statement::column (){
-this->step_if_input();
+sqlite_statement::column (
+){
+this->step_if_more_input();
 return this->column<T> (this->index++);
 }
 

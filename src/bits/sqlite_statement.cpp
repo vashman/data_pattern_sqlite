@@ -5,14 +5,14 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_SQLITE_STATEMENT_CPP
-#define DATA_PATTERN_SQLITE_STATEMENT_CPP
+#ifndef DATA_PATTERN_SQLITE_SQLITE_STATEMENT_CPP
+#define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_CPP
 
 namespace data_pattern_sqlite {
 
 /* ctor */
 sqlite_statement::sqlite_statement (
-  sqlite _db
+  sqlite _database
 , char const * _query
 )
 /*
@@ -21,68 +21,80 @@ sqlite_statement::sqlite_statement (
  */
 : stmt (NULL)
   /*
-   * The following state cannot be set
-   * only thrown, and signifies a new
-   * un-stepped statement.
+   * The following state cannot be set only thrown, and
+   * signifies a new un-stepped statement.
    */
 , state (SQLITE_MISUSE)
-, db (_db)
-, max_col (0)
+, db (_database)
+, column_count (0)
 , stepped(false)
-, var_count (0)
-// set to 1 for bind / output statements
+, bind_parameter_count (0)
+// will be set to 1 for bind / output statements
 , index (0) {
 
 sqlite_check_error( sqlite3_prepare_v2 (
-  _db.get()
+  _database.get()
 , _query
-, -1 /* Query is null terminated. */
+, -1 /* Query must be alawys null terminated. */
 , & (this->stmt)
 /* 
- * There is never an unused portion of
- * the statement.
+ * There is never an unused portion of the statement.
  */
 , 0
 ));
   if (this->stmt == NULL)
-  throw std::string("null stmt stepped.");
+  throw sqlite_exception("Null statement", SQLITE_MISUSE);
 
-this->var_count = sqlite3_bind_parameter_count(this->stmt);
+this->bind_parameter_count
+  = sqlite3_bind_parameter_count(this->stmt);
   /*
-   * If the statement has no parameters to bind, then step right away.* 
+   * If the statement has no parameters to bind, then step
+   * right away.* 
    * if step finds a result, the statement will be treated like a input statement. otherwise complete.
    */
-  if (0 == var_count) this->step();
+  if (0 == bind_parameter_count) this->step();
 }
 
-sqlite_statement::~sqlite_statement (){
-sqlite3_finalize((this->stmt));
+sqlite_statement::~sqlite_statement (
+){
+sqlite3_finalize(this->stmt);
 }
 
 /* sqlite step */
 void
-sqlite_statement::step (){
+sqlite_statement::step (
+){
 this->stepped = true;
-
 this->state = sqlite_check_error(sqlite3_step (this->stmt));
-this->max_col = sqlite3_column_count (this->stmt);
+this->column_count = sqlite3_column_count (this->stmt);
 
-  if (this->max_col > 0) this->index = 0;
+  if (this->column_count > 0) this->index = 0;
+}
+
+bool
+sqlite_statement::is_bind_done(
+) const {
+return this->index >= this->bind_parameter_count;
+  //if (0 == --this->bind_parameter_count) this->step();
+}
+
+bool
+sqlite_statement::has_more_input(
+) const {
+return ((this->state == SQLITE_ROW)
+  && (this->index >= this->column_count));
 }
 
 void
-sqlite_statement::step_if (){
-  if (0 == --this->var_count) this->step();
+sqlite_statement::step_if_bind_done (
+){
+  if (this->is_bind_done()) this->step();
 }
 
 void
-sqlite_statement::step_if_input (){
-  if (
-     (this->state == SQLITE_ROW)
-  && (this->index >= this->max_col)
-  ){
-  this->step();
-  }
+sqlite_statement::step_if_more_input (
+){
+  if (this->has_more_input()) this->step();
 }
 
 /* sqlite_statement bind_int */
@@ -100,15 +112,17 @@ sqlite_statement::bind (
   int _var
 ){
 this->bind (++this->index, _var);
-this->step_if();
+this->step_if_bind_done();
 }
 
+namespace bits {
 /* */
 void
 sqlite_dtor_data (void *);
 
 void
 sqlite_dtor_data (void * _data){/* do nothing */}
+} /* bits */
 
 /* sqlite_statement bind_blob */
 void
@@ -118,7 +132,12 @@ sqlite_statement::bind (
 , int _size
 ){
 this->state = sqlite_check_error ( sqlite3_bind_blob (
-  this->stmt, _index, _blob, _size, sqlite_dtor_data ) );
+  this->stmt
+, _index
+, _blob
+, _size
+, bits::sqlite_dtor_data
+));
 }
 
 void
@@ -127,7 +146,7 @@ sqlite_statement::bind (
 , int _size
 ){
 this->bind(++this->index, _blob, _size);
-this->step_if();
+this->step_if_bind_done();
 }
 
 /* sqlite_statement bind string */
@@ -146,9 +165,24 @@ this->state = sqlite_check_error ( sqlite3_bind_text (
   this->stmt
 , _index
 , _str
-, static_cast<int> (
-  std::char_traits<char>::length(_str) )
-, sqlite_dtor_data ) );
+, static_cast<int> (std::char_traits<char>::length(_str))
+, bits::sqlite_dtor_data
+));
+}
+
+void
+sqlite_statement::bind (
+  int _index
+, std::string _str
+){
+this->bind(_index, _str.c_str());
+}
+
+void
+sqlite_statement::bind (
+  std::string _str
+){
+this->bind(_str.c_str());
 }
 
 void
@@ -156,7 +190,7 @@ sqlite_statement::bind (
   char const * _str
 ){
 this->bind (++this->index, _str);
-this->step_if();
+this->step_if_bind_done();
 }
 
 /* sqlite_statement bind double */
@@ -174,17 +208,19 @@ sqlite_statement::bind (
   double _var
 ){
 this->bind(++this->index, _var);
-this->step_if();
+this->step_if_bind_done();
 }
 
 void
-sqlite_statement::bind (){
+sqlite_statement::bind (
+){
 this->bind(++this->index, nullptr);
-this->step_if();
+this->step_if_bind_done();
 }
 
 bool
-sqlite_statement::is_stepped () const {
+sqlite_statement::is_stepped (
+) const {
 return this->stepped;
 }
 
@@ -197,8 +233,7 @@ column <int> (
   int _index
 , sqlite3_stmt * _stmt
 ){
-return sqlite3_column_int
-  (_stmt, _index);
+return sqlite3_column_int(_stmt, _index);
 }
 
 /* sqlite_statement column_double */
@@ -208,8 +243,7 @@ column <double> (
   int _index
 , sqlite3_stmt * _stmt
 ){
-return sqlite3_column_double
-  (_stmt, _index);
+return sqlite3_column_double(_stmt, _index);
 }
 
 /* sqlite_statement column_blob */
@@ -240,7 +274,7 @@ column <const char16_t *> (
 , sqlite3_stmt * _stmt
 ){
 return reinterpret_cast<const char16_t*>
-( sqlite3_column_text16(_stmt, _index));
+(sqlite3_column_text16(_stmt, _index));
 }
 
 } /* helper */
@@ -250,8 +284,7 @@ int
 sqlite_statement::column_bytes (
   int _index
 ){
-return sqlite3_column_bytes (
-  this->stmt, _index );
+return sqlite3_column_bytes (this->stmt, _index);
 }
 
 /* column bytes 16 */
@@ -259,34 +292,31 @@ int
 sqlite_statement::column_bytes16 (
   int _index
 ){
-return sqlite3_column_bytes16 (
-  this->stmt, _index );
+return sqlite3_column_bytes16 (this->stmt, _index);
 }
 
 sqlite3_value *
 sqlite_statement::column_value (
   int _index
 ){
-return sqlite3_column_value (
-  this->stmt, _index );
+return sqlite3_column_value (this->stmt, _index);
 }
 
 int
 sqlite_statement::column_type (
   int _index
 ){
-return sqlite3_column_type (
-  this->stmt, _index );
+return sqlite3_column_type (this->stmt, _index);
 }
 
 int
-sqlite_statement::get_max_col () const {
-return this->max_col;
+sqlite_statement::get_column_count () const {
+return this->column_count;
 }
 
 int
-sqlite_statement::get_var_count () const {
-return this->var_count;
+sqlite_statement::get_bind_parameter_count () const {
+return this->bind_parameter_count;
 }
 
 bool
@@ -297,7 +327,7 @@ sqlite_statement::is_done () const {
     (  (this->state != SQLITE_DONE)
     && (this->state != SQLITE_OK)
     )
-  && (this->index < this->max_col)
+  && (this->index < this->column_count)
   ){
   return false;
   }

@@ -5,8 +5,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef DATA_PATTERN_BITS_SQLITE_EXCEPTION_HPP
-#define DATA_PATTERN_BITS_SQLITE_EXCEPTION_HPP
+#ifndef DATA_PATTERN_SQLITE_BITS_SQLITE_EXCEPTION_HPP
+#define DATA_PATTERN_SQLITE_BITS_SQLITE_EXCEPTION_HPP
 
 #include <stdexcept>
 
@@ -16,30 +16,16 @@ namespace data_pattern_sqlite {
 struct sqlite_exception : public std::runtime_error {
   
 explicit
-sqlite_exception (
-  std::string const
-, int
-);
-
-sqlite_exception (
-  sqlite_exception const &
-) = default;
+sqlite_exception (std::string const, int);
+sqlite_exception (sqlite_exception const &) = default;
+sqlite_exception (sqlite_exception &&) = default;
+~sqlite_exception () noexcept = default;
 
 sqlite_exception &
-operator = (
-  sqlite_exception const &
-) = default;
-
-sqlite_exception (
-  sqlite_exception &&
-) = default;
+operator = (sqlite_exception const &) = default;
 
 sqlite_exception &
-operator = (
-  sqlite_exception &&
-) = default;
-
-~sqlite_exception() noexcept = default;
+operator = (sqlite_exception &&) = default;
 
 std::string const err;
 int const rv;
