@@ -9,6 +9,14 @@
 #define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_CPP
 
 namespace data_pattern_sqlite {
+namespace bits {
+/* */
+void
+sqlite_dtor_data (void *);
+
+void
+sqlite_dtor_data (void * _data){/* do nothing */}
+} /* bits */
 
 /* ctor */
 sqlite_statement::sqlite_statement (
@@ -32,15 +40,12 @@ sqlite_statement::sqlite_statement (
 // will be set to 1 for bind / output statements
 , index (0) {
 
-sqlite_check_error( sqlite3_prepare_v2 (
+sqlite_check_error ( sqlite3_prepare_v2 (
   _database.get()
 , _query
 , -1 /* Query must be alawys null terminated. */
 , & (this->stmt)
-/* 
- * There is never an unused portion of the statement.
- */
-, 0
+, 0 /* There is never an unused portion of the statement. */
 ));
   if (this->stmt == NULL)
   throw sqlite_exception("Null statement", SQLITE_MISUSE);
@@ -50,9 +55,10 @@ this->bind_parameter_count
   /*
    * If the statement has no parameters to bind, then step
    * right away.* 
-   * if step finds a result, the statement will be treated like a input statement. otherwise complete.
+   * if step finds a result, the statement will be treated
+   * like a input statement. otherwise complete.
    */
-  if (0 == bind_parameter_count) this->step();
+  //if (0 == bind_parameter_count) this->step();
 }
 
 sqlite_statement::~sqlite_statement (
@@ -71,213 +77,11 @@ this->column_count = sqlite3_column_count (this->stmt);
   if (this->column_count > 0) this->index = 0;
 }
 
-bool
-sqlite_statement::is_bind_done(
-) const {
-return this->index >= this->bind_parameter_count;
-  //if (0 == --this->bind_parameter_count) this->step();
-}
-
-bool
-sqlite_statement::has_more_input(
-) const {
-return ((this->state == SQLITE_ROW)
-  && (this->index >= this->column_count));
-}
-
-void
-sqlite_statement::step_if_bind_done (
-){
-  if (this->is_bind_done()) this->step();
-}
-
-void
-sqlite_statement::step_if_more_input (
-){
-  if (this->has_more_input()) this->step();
-}
-
-/* sqlite_statement bind_int */
-void
-sqlite_statement::bind (
-  int _index
-, int _var
-){
-this->state = sqlite_check_error ( sqlite3_bind_int (
-  this->stmt, _index, _var ) );
-}
-
-void
-sqlite_statement::bind (
-  int _var
-){
-this->bind (++this->index, _var);
-this->step_if_bind_done();
-}
-
-namespace bits {
-/* */
-void
-sqlite_dtor_data (void *);
-
-void
-sqlite_dtor_data (void * _data){/* do nothing */}
-} /* bits */
-
-/* sqlite_statement bind_blob */
-void
-sqlite_statement::bind (
-  int _index
-, void const * _blob
-, int _size
-){
-this->state = sqlite_check_error ( sqlite3_bind_blob (
-  this->stmt
-, _index
-, _blob
-, _size
-, bits::sqlite_dtor_data
-));
-}
-
-void
-sqlite_statement::bind (
-  void const * _blob
-, int _size
-){
-this->bind(++this->index, _blob, _size);
-this->step_if_bind_done();
-}
-
-/* sqlite_statement bind string */
-void
-sqlite_statement::bind (
-  int _index
-, char const * _str
-){
-  if (_str == nullptr){
-  this->state = sqlite_check_error ( sqlite3_bind_null (
-    this->stmt, _index ) );
-  return;
-  }
-// else bind string
-this->state = sqlite_check_error ( sqlite3_bind_text (
-  this->stmt
-, _index
-, _str
-, static_cast<int> (std::char_traits<char>::length(_str))
-, bits::sqlite_dtor_data
-));
-}
-
-void
-sqlite_statement::bind (
-  int _index
-, std::string _str
-){
-this->bind(_index, _str.c_str());
-}
-
-void
-sqlite_statement::bind (
-  std::string _str
-){
-this->bind(_str.c_str());
-}
-
-void
-sqlite_statement::bind (
-  char const * _str
-){
-this->bind (++this->index, _str);
-this->step_if_bind_done();
-}
-
-/* sqlite_statement bind double */
-void
-sqlite_statement::bind (
-  int _index
-, double _var
-){
-this->state = sqlite_check_error ( sqlite3_bind_double (
-  this->stmt, _index, _var ) );
-}
-
-void
-sqlite_statement::bind (
-  double _var
-){
-this->bind(++this->index, _var);
-this->step_if_bind_done();
-}
-
-void
-sqlite_statement::bind (
-){
-this->bind(++this->index, nullptr);
-this->step_if_bind_done();
-}
-
-bool
-sqlite_statement::is_stepped (
-) const {
-return this->stepped;
-}
-
-namespace helper {
-
-/* sqlite_statement column_int */
-template <>
 int
-column <int> (
-  int _index
-, sqlite3_stmt * _stmt
-){
-return sqlite3_column_int(_stmt, _index);
+sqlite_statement::get_state (
+) const {
+return this->state;
 }
-
-/* sqlite_statement column_double */
-template <>
-double
-column <double> (
-  int _index
-, sqlite3_stmt * _stmt
-){
-return sqlite3_column_double(_stmt, _index);
-}
-
-/* sqlite_statement column_blob */
-template <>
-const void *
-column <const void*> (
-  int _index
-, sqlite3_stmt * _stmt
-){
-return sqlite3_column_blob (_stmt, _index);
-}
-
-/* column text */
-template <>
-const unsigned char *
-column <const unsigned char *> (
-  int _index
-, sqlite3_stmt * _stmt
-){
-return sqlite3_column_text (_stmt, _index);
-}
-
-/* column bytes 16 */
-template <>
-const char16_t *
-column <const char16_t *> (
-  int _index
-, sqlite3_stmt * _stmt
-){
-return reinterpret_cast<const char16_t*>
-(sqlite3_column_text16(_stmt, _index));
-}
-
-} /* helper */
 
 /* column bytes */
 int
@@ -320,11 +124,17 @@ return this->bind_parameter_count;
 }
 
 bool
-sqlite_statement::is_done () const {
+sqlite_statement::is_stepped (
+) const {
+return this->stepped;
+}
+
+bool
+sqlite_statement::is_done (
+) const {
   if (! this->stepped) return false;
 
-  if (
-    (  (this->state != SQLITE_DONE)
+  if (((this->state != SQLITE_DONE)
     && (this->state != SQLITE_OK)
     )
   && (this->index < this->column_count)
@@ -332,6 +142,188 @@ sqlite_statement::is_done () const {
   return false;
   }
 return true;
+}
+
+/* sqlite_statement bind_int */
+void
+sqlite_statement::bind (
+  int _index
+, int _var
+){
+this->state = sqlite_check_error (
+  sqlite3_bind_int (this->stmt, _index, _var) );
+}
+
+/* sqlite_statement bind_blob */
+void
+sqlite_statement::bind (
+  int _index
+, void const * _blob
+, int _size
+){
+this->state = sqlite_check_error ( sqlite3_bind_blob (
+  this->stmt
+, _index
+, _blob
+, _size
+, bits::sqlite_dtor_data
+));
+}
+
+/* sqlite_statement bind string */
+void
+sqlite_statement::bind (
+  int _index
+, char const * _str
+){
+  if (_str == nullptr){
+  this->state = sqlite_check_error ( sqlite3_bind_null (
+    this->stmt, _index ) );
+  return;
+  }
+// else bind string
+this->state = sqlite_check_error ( sqlite3_bind_text (
+  this->stmt
+, _index
+, _str
+, static_cast<int> (std::char_traits<char>::length(_str))
+, bits::sqlite_dtor_data
+));
+}
+
+/* sqlite_statement bind double */
+void
+sqlite_statement::bind (
+  int _index
+, double _var
+){
+this->state = sqlite_check_error (
+  sqlite3_bind_double(this->stmt, _index, _var ) );
+}
+
+/* sqlite_statement column_int */
+int
+sqlite_statement::column_int (
+  int _index
+){
+return sqlite3_column_int(this->stmt, _index);
+}
+
+/* sqlite_statement column_double */
+double
+sqlite_statement::column_double (
+  int _index
+){
+return sqlite3_column_double(this->stmt, _index);
+}
+
+/* sqlite_statement column_blob */
+const void *
+sqlite_statement::column_const_void_ptr (
+  int _index
+){
+return sqlite3_column_blob (this->stmt, _index);
+}
+
+/* column text */
+const unsigned char *
+sqlite_statement::column_const_unsigned_char_ptr (
+  int _index
+){
+return sqlite3_column_text (this->stmt, _index);
+}
+
+/* column bytes 16 */
+const char16_t *
+sqlite_statement::column_const_char16_t_ptr (
+  int _index
+){
+return reinterpret_cast<const char16_t*>
+(sqlite3_column_text16(this->stmt, _index));
+}
+
+sqlite3_int64
+sqlite_statement::column_sqlite3_int64(
+  int _index
+){
+return sqlite3_column_int64(this->stmt, _index);
+}
+
+void
+step (
+  sqlite_statement & _stmt
+){
+_stmt.step();
+}
+
+bool
+is_bind_done (
+  sqlite_statement const & _stmt
+){
+return _stmt.index >= _stmt.get_bind_parameter_count();
+  //if (0 == --this->bind_parameter_count) this->step();
+}
+
+bool
+has_more_input (
+  sqlite_statement const & _stmt
+){
+return ((_stmt.get_state() == SQLITE_ROW)
+  && (_stmt.index >= _stmt.get_column_count()));
+}
+
+void
+bind (
+  sqlite_statement & _stmt
+, int _var
+){
+_stmt.bind (++_stmt.index, _var);
+}
+
+void
+bind (
+  sqlite_statement & _stmt
+, double _var
+){
+_stmt.bind(++_stmt.index, _var);
+}
+
+void
+bind (
+  sqlite_statement & _stmt
+){
+_stmt.bind(++_stmt.index, nullptr);
+}
+
+void
+bind (
+  sqlite_statement & _stmt
+, data_pattern::raw_view _blob
+){
+_stmt.bind(++(_stmt.index), _blob.data(), _blob.size());
+}
+
+/* column_int */
+int
+column_int (
+  sqlite_statement & _stmt
+){
+return _stmt.column_int(_stmt.index++);
+}
+
+sqlite3_int64
+column_sqlite3_int64 (
+  sqlite_statement & _stmt
+){
+return _stmt.column_sqlite3_int64(_stmt.index++);
+}
+
+/* column_double */
+double
+column_double (
+  sqlite_statement & _stmt
+){
+return _stmt.column_double(_stmt.index++);
 }
 
 } /* data pattern_sqlite */

@@ -15,7 +15,6 @@ extern "C"{
 
 namespace data_pattern_sqlite {
 
-class sqlite_statement;
 class sqlite_exception;
 
 template <typename T>
@@ -25,14 +24,6 @@ using sqlite = std::shared_ptr<sqlite3>;
 
 sqlite
 open_database (char const *);
-
-/*
- * Throws an exception for an sqlite
- * error code, or returns the code if
- * nothing exceptional happens.
- */
-int
-sqlite_check_error (int);
 
 } /* data_pattern_sqlite */
 #endif

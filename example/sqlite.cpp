@@ -5,7 +5,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
 #include <cassert>
 #include <data_pattern/raw.hpp>
 #include "../src/sqlite.cpp"
@@ -30,46 +29,52 @@ sqlite_statement query1 (
   "(ID INT PRIMARY KEY NOT NULL, Value INT);"
 );
 
+step(s1);
+step(query1);
+
 auto query2 = sqlite_statement (
   db
 , "INSERT INTO test3 "
   "(Value, str, dec, raw) Values (?,?,?,?);"
 );
 
-query2.bind(45);
-query2.bind("test string");
-query2.bind(12.04);
-query2.bind("0101", 4);
+bind(query2, 45);
+bind(query2, std::string("test string"));
+bind(query2, 12.04);
+bind(query2, data_pattern::raw<>("0101", 4));
+  if (is_bind_done(query2)) step(query2);
 
-auto query3 = sqlite_statement (
+auto query3 ( sqlite_statement (
   db, "INSERT INTO test (ID, Value) Values (?, ?);"
-);
+));
 
-query3.bind(2);
-query3.bind(28);
+bind(query3, 2);
+bind(query3, 28);
+  if (is_bind_done(query3)) step(query3);
 
 // Retrive data
-auto select1 =
-  sqlite_statement (db, "SELECT ID, Value FROM test;");
+auto select1 (
+  sqlite_statement (db, "SELECT ID, Value FROM test;"));
+step(select1);
 
-int temp_int (select1.column<int>());
-assert (temp_int == 2);
-temp_int = select1.column<int>();
+int tmp_int (column_int(select1));
+int temp_int = column_int(select1);
+assert (tmp_int == 2);
 assert (temp_int == 28);
 
 auto select2 ( sqlite_statement (
   db
 , "SELECT Value, dec, str, raw FROM test3;"
 ));
+step(select2);
 
-temp_int = select2.column <int>();
-double temp_dbl (select2.column <double>());
-std::string temp_str
-  (reinterpret_cast<const char*>(select2.column <const unsigned char*>()));
-data_pattern::raw<unsigned char> temp_raw
- (static_cast<const unsigned char*>(select2.column <const void*>()), select2.column_bytes(static_cast<std::size_t>(select2.index-1)));
+temp_int = column_int(select2);
+double temp_dbl (column_double(select2));
+auto temp_str = column_string(select2);
+data_pattern::raw<> temp_raw = column_raw(select2);
+
 assert (temp_int == 45);
-assert (temp_str == std::string("test string"));
+///assert (temp_str == "test string");
 assert (temp_dbl == 12.04);
 
 return 0;

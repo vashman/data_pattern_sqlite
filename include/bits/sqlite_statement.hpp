@@ -9,6 +9,8 @@
 #define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_HPP
 
 #include <string>
+#include <data_pattern/raw.hpp>
+#include "sqlite_statement_fwd.hpp"
 
 namespace data_pattern_sqlite {
 
@@ -28,12 +30,6 @@ sqlite db;
 int column_count;
 bool stepped; //True when the statement has been stepped.
 int bind_parameter_count;
-
-void
-step_if_bind_done();
-
-void
-step_if_more_input();
 
 public:
 
@@ -55,11 +51,8 @@ is_stepped() const;
 bool
 is_done() const;
 
-bool
-is_bind_done() const;
-
-bool
-has_more_input() const;
+int
+get_state() const;
 
 /* ctor */
 explicit
@@ -91,35 +84,6 @@ bind (int, void const *, int);
 void
 bind (int, char const *);
 
-void
-bind (int, std::string);
-
-void
-bind (std::string);
-
-void
-bind (char const *);
-
-void
-bind (int);
-
-void
-bind (double);
-
-void
-bind (void const *, int);
-
-void
-bind ();
-
-template <typename T>
-T
-column ();
-
-template <typename T>
-T
-column (int);
-
 int
 column_bytes (int);
 
@@ -135,44 +99,32 @@ column_value (int);
 void
 step();
 
-}; /* sqlite satemenmt */
-
-namespace helper {
-
-template <typename T>
-T
-column (int, sqlite3_stmt *);
-
 /* column_int */
-template <>
 int
-column <int> (int, sqlite3_stmt *);
+column_int (int);
 
-template <>
 sqlite3_int64
-column <sqlite3_int64> (int, sqlite3_stmt *);
+column_sqlite3_int64 (int);
 
 /* column_double */
-template <>
 double
-column <double> (int, sqlite3_stmt *);
+column_double (int);
 
 /* column blob */
-template <>
 const void *
-column <const void *> (int, sqlite3_stmt *);
+column_const_void_ptr (int);
 
 /* column text */
-template <>
 const unsigned char *
-column <const unsigned char *> (int, sqlite3_stmt *);
+column_const_unsigned_char_ptr (int);
 
 /* column text 16 */
-template <>
 const char16_t *
-column <const char16_t *> (int, sqlite3_stmt *);
+column_const_char16_t_ptr (int);
 
-} /* helper */ } /* data pattern sqlite */
+}; /* sqlite satemenmt */
+
+} /* data pattern sqlite */
 #endif
 #include "sqlite_statement.tcc"
 
