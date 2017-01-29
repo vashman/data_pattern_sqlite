@@ -5,10 +5,9 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <iostream>
 #include <cassert>
 #include <data_pattern/raw.hpp>
-#include "../src/sqlite.cpp"
+//#include "../src/sqlite.cpp"
 
 using data_pattern_sqlite::sqlite;
 using data_pattern_sqlite::open_database;
@@ -24,8 +23,7 @@ sqlite db = open_database("testdata");
 sqlite_statement s1 (
   db
 , "CREATE TABLE IF NOT EXISTS test3"
- // "(Value INT, str TEXT, dec REAL, raw Blob);"
- "(Value INT, str TEXT, dec REAL);"
+  "(Value INT, str TEXT, dec REAL, raw Blob);"
 );
 
 sqlite_statement query1 (
@@ -37,24 +35,22 @@ sqlite_statement query1 (
 auto query2 = sqlite_statement (
   db
 , "INSERT INTO test3 "
- // "(Value, str, dec, raw) Values (?,?,?,?);"
- "(Value, str, dec) Values (?,?,?);"
+ "(Value, str, dec, raw) Values (?,?,?,?);"
 );
 
 auto iter_i = sqlite_iterator<int>(query2);
 auto iter_d = sqlite_iterator<double>(query2);
-//auto iter_r = sqlite_iterator<raw<>>(query2);
+auto iter_r = sqlite_iterator<raw<>>(query2);
 auto iter_s = sqlite_iterator<string>(query2);
+
 // Bind values
 *iter_i++ = 45;
 *iter_s++ = std::string("test string");
 *iter_d++ = 12.04;
-//*iter_r++ = raw<>("0101", 4);
+*iter_r++ = raw<>("0101", 4);
 
 auto query3 = sqlite_statement (
-  db
-, "INSERT INTO test (ID, Value) Values (?, ?);"
-);
+  db, "INSERT INTO test (ID, Value) Values (?, ?);" );
 
 iter_i = sqlite_iterator<int>(query2);
 *iter_i = 2;
@@ -73,12 +69,9 @@ temp_int = *iter_i++;
 assert (temp_int == 28);
 
 auto sel2 ( sqlite_statement (
-  db
-,// "SELECT Value, dec, str, raw FROM test3;"
- "SELECT Value, dec, str FROM test3;"
-));
+  db, "SELECT Value, dec, str, raw FROM test3;" ));
 
-/*iter_i = sqlite_iterator<int>(del2);
+iter_i = sqlite_iterator<int>(del2);
 temp_int = *iter_i++;
 double temp_dbl (*sqlite_iterator<double>(sel2)++);
 std::string temp_str
@@ -87,7 +80,7 @@ data_pattern::raw temp_raw
  (sel2.column <const void*>(), sel2.column_bytes(static_cast<std::size_t>(sel2.index-1)));
 assert (temp_int == 45);
 assert (temp_str == std::string("test string"));
-assert (temp_dbl == 12.04);*/
+assert (temp_dbl == 12.04);
 
 return 0;
 }

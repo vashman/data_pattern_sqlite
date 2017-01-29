@@ -39,6 +39,15 @@ _stmt.bind(++_stmt.index, _str.c_str());
 
 template <typename Traits, typename Allocator>
 std::basic_string<unsigned char, Traits, Allocator>
+sqlite_statement::column_string (
+  int _index
+){
+return std::basic_string<unsigned char, Traits, Allocator> (
+  this->column_const_unsigned_char_ptr(_index) );
+}
+
+template <typename Traits, typename Allocator>
+std::basic_string<unsigned char, Traits, Allocator>
 column_string (
   sqlite_statement & _stmt
 ){
@@ -55,19 +64,22 @@ bind (
 data_pattern_sqlite::bind(_stmt, _raw);
 }
 
-data_pattern::raw<>
-column_raw (
-  sqlite_statement & _stmt
+template <typename Allocator>
+void
+sqlite_statement::bind (
+  int _index
+, data_pattern::raw<Allocator> && _raw
 ){
-using std::size_t;
+this->bind(_index, _raw);
+}
 
-size_t temp
-  = static_cast<size_t>(_stmt.column_bytes(_stmt.index));
-
-return data_pattern::raw<> (
-  _stmt.column_const_void_ptr(_stmt.index++)
-, temp
-);
+template <typename Traits, typename Allocator>
+void
+sqlite_statement::bind (
+  int _index
+, std::basic_string<char, Traits, Allocator> const & _str
+){
+this->bind(_index, _str.c_str());
 }
 
 } /* data pattern sqlite */

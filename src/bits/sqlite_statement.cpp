@@ -10,12 +10,12 @@
 
 namespace data_pattern_sqlite {
 namespace bits {
-/* */
+/* *
 void
 sqlite_dtor_data (void *);
 
 void
-sqlite_dtor_data (void * _data){/* do nothing */}
+sqlite_dtor_data (void * _data){/ * do nothing * /}*/
 } /* bits */
 
 /* ctor */
@@ -166,7 +166,7 @@ this->state = sqlite_check_error ( sqlite3_bind_blob (
 , _index
 , _blob
 , _size
-, bits::sqlite_dtor_data
+, reinterpret_cast<sqlite3_destructor_type>(-1)
 ));
 }
 
@@ -187,7 +187,7 @@ this->state = sqlite_check_error ( sqlite3_bind_text (
 , _index
 , _str
 , static_cast<int> (std::char_traits<char>::length(_str))
-, bits::sqlite_dtor_data
+, reinterpret_cast<sqlite3_destructor_type>(-1)
 ));
 }
 
@@ -296,11 +296,19 @@ _stmt.bind(++_stmt.index, nullptr);
 }
 
 void
+sqlite_statement::bind (
+  int _index
+, data_pattern::raw_view _blob
+){
+this->bind(_index, _blob.data(), _blob.size());
+}
+
+void
 bind (
   sqlite_statement & _stmt
 , data_pattern::raw_view _blob
 ){
-_stmt.bind(++(_stmt.index), _blob.data(), _blob.size());
+_stmt.bind(++_stmt.index, _blob);
 }
 
 /* column_int */
@@ -324,6 +332,24 @@ column_double (
   sqlite_statement & _stmt
 ){
 return _stmt.column_double(_stmt.index++);
+}
+
+data_pattern::raw<>
+column_raw (
+  sqlite_statement & _stmt
+){
+return _stmt.column_raw(_stmt.index++);
+}
+
+data_pattern::raw<>
+sqlite_statement::column_raw (
+  int _index
+){
+return data_pattern::raw<> (
+  *static_cast<const data_pattern::raw<>::data_type *> (
+    this->column_const_void_ptr(_index))
+, static_cast<std::size_t>(this->column_bytes(_index))
+);
 }
 
 } /* data pattern_sqlite */

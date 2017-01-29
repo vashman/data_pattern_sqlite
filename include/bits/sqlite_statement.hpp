@@ -84,6 +84,26 @@ bind (int, void const *, int);
 void
 bind (int, char const *);
 
+void
+bind (
+  int
+, data_pattern::raw_view
+);
+
+template <typename Allocator>
+void
+bind (
+  int
+, data_pattern::raw<Allocator> &&
+);
+
+template <typename Traits, typename Allocator>
+void
+bind (
+  int
+, std::basic_string<char, Traits, Allocator> const &
+);
+
 int
 column_bytes (int);
 
@@ -121,6 +141,17 @@ column_const_unsigned_char_ptr (int);
 /* column text 16 */
 const char16_t *
 column_const_char16_t_ptr (int);
+
+data_pattern::raw<>
+column_raw(int);
+
+template <
+  typename Traits = std::char_traits<unsigned char>
+, typename Allocator = std::allocator<unsigned char> >
+std::basic_string<unsigned char, Traits, Allocator>
+column_string (
+  int
+);
 
 }; /* sqlite satemenmt */
 

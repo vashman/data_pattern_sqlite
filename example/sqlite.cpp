@@ -76,6 +76,7 @@ data_pattern::raw<> temp_raw = column_raw(select2);
 assert (temp_int == 45);
 ///assert (temp_str == "test string");
 assert (temp_dbl == 12.04);
+assert (temp_raw == data_pattern::raw<>("0101", 4));
 
 return 0;
 }
