@@ -33,6 +33,13 @@ int bind_parameter_count;
 
 public:
 
+using string_t
+  = std::basic_string <
+    unsigned char
+  , std::char_traits<unsigned char>
+  , std::allocator<unsigned char>
+  >;
+
 /*
  * Column counter used to keep track of which column in the
  * current table is currently active.

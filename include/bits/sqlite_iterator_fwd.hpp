@@ -13,7 +13,6 @@ namespace data_pattern_sqlite {
 template <typename T>
 class sqlite_iterator_input;
 
-template <typename T>
 class sqlite_iterator_output;
 
 } /* data pattern sqlite */

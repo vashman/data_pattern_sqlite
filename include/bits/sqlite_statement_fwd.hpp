@@ -34,7 +34,13 @@ is_bind_done (
 );
 
 bool
-has_more_input (
+is_bind_done (
+  sqlite_statement const &
+, int
+);
+
+bool
+has_another_row (
   sqlite_statement const & _stmt
 );
 

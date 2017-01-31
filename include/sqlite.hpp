@@ -16,6 +16,6 @@
 #include "bits/sqlite_exception.hpp"
 
 #include "bits/sqlite_iterator_fwd.hpp"
-//#include "bits/sqlite_iterator.hpp"
+#include "bits/sqlite_iterator.hpp"
 #endif
 

@@ -18,13 +18,19 @@ T column (sqlite_statement &, int);
 
 template <>
 int
-column <int>(sqlite_statement & _stmt, int _index){
+column <int>(
+  sqlite_statement & _stmt
+, int _index
+){
 return _stmt.column_int(_index);
 }
 
 template <>
 double
-column <double>(sqlite_statement & _stmt, int _index){
+column <double>(
+  sqlite_statement & _stmt
+, int _index
+){
 return _stmt.column_double(_index);
 }
 
@@ -37,64 +43,53 @@ column <sqlite3_int64> (
 return _stmt.column_sqlite3_int64(_index);
 }
 
+template <>
+data_pattern::raw<>
+column <data_pattern::raw<>> (
+  sqlite_statement & _stmt
+, int _index
+){
+return _stmt.column_raw(_index);
+}
+
+template <>
+sqlite_statement::string_t
+column <sqlite_statement::string_t> (
+  sqlite_statement & _stmt
+, int _index
+){
+return _stmt.column_string(_index);
+}
+
 } /* bits */
 
 template <typename T>
 class sqlite_iterator_input {
 
-public:
-
-struct proxy {
-
+sqlite_statement * stmt;
 T temp;
-int index;
-sqlite_statement * stmt;
-
-proxy (
-  int _index
-, sqlite_statement & _stmt
-)
-: temp ()
-, index(_index)
-, stmt (& _stmt)
-{}
-
-~proxy() = default;
-proxy (proxy const &) = default;
-proxy (proxy &&) = default;
-proxy & operator = (proxy const &) = delete;
-proxy & operator = (proxy &&) = default;
-
-operator T(){
-this->temp
-  = template bits::column<T>(this->stmt, this->index);
-return this->temp;
-}
-
-T *
-operator -> (){
-return &this->temp;
-}
-
-}; /* proxy */
-
-private:
-
-sqlite_statement * stmt;
-proxy temp;
+bool got_var;
 int index;
 
 public:
 
 typedef std::input_iterator_tag iterator_catagory;
-typedef proxy value_type;
+typedef T value_type;
 typedef std::size_t difference_type;
-typedef proxy * pointer;
-typedef proxy & reference;
+typedef T * pointer;
+typedef T & reference;
 
 explicit
-sqlite_iterator_input (sqlite_statement & _stmt);
+sqlite_iterator_input (sqlite_statement &);
 sqlite_iterator_input ();
+sqlite_iterator_input (sqlite_statement &, int);
+
+template <typename U>
+sqlite_iterator_input (
+  sqlite_statement &
+, sqlite_iterator_input<U> const &
+);
+
 ~sqlite_iterator_input() = default;
 
 sqlite_iterator_input (
@@ -115,12 +110,14 @@ sqlite_iterator_input
 operator ++ (int) {
 sqlite_iterator_input temp_iter (*this);
 ++this->index;
+this->got_var = false;
 return temp_iter;
 }
 
 sqlite_iterator_input &
 operator ++ (){
 ++this->index;
+this->got_var = false;
 return *this;
 }
 
@@ -146,22 +143,36 @@ operator != (
 return !(*this == _rhs);
 }
 
-proxy &
+T &
 operator * (){
+this->get_var();
 return this->temp;
 }
 
-proxy *
+T *
 operator -> (){
+this->get_var();
 return &this->temp;
 }
-}; /* sqlite iterator output */
 
-template <typename T>
+void
+get_var (
+){
+  if(false == this->got_var){
+    if(has_another_row(*this->stmt)
+    && this->index >= this->stmt->get_column_count()
+    ){
+    step(*this->stmt); // Get next row.
+    }
+  this->temp = bits::column<T>(*this->stmt, this->index);
+  this->got_var = true;
+  }
+}
+}; /* sqlite iterator input */
+
 class sqlite_iterator_output {
 
 sqlite_statement * stmt;
-proxy temp;
 int index;
 
 public:
@@ -176,8 +187,14 @@ explicit
 sqlite_iterator_output (sqlite_statement & _stmt);
 sqlite_iterator_output ();
 ~sqlite_iterator_output() = default;
-sqlite_iterator_output (sqlite_iterator_output const &) = default;
-sqlite_iterator_output (sqlite_iterator_output &&) = default;
+
+sqlite_iterator_output (
+  sqlite_iterator_output const &
+) = default;
+
+sqlite_iterator_output (
+  sqlite_iterator_output &&
+) = default;
 
 sqlite_iterator_output &
 operator = (sqlite_iterator_output const &) = default;
@@ -185,11 +202,14 @@ operator = (sqlite_iterator_output const &) = default;
 sqlite_iterator_output &
 operator = (sqlite_iterator_output &&) = default;
 
+template <typename T>
 sqlite_iterator_output &
 operator = (
   T const & _var
 ){
 this->stmt->bind(this->index, _var);
+  if (is_bind_done(*this->stmt, this->index))
+  step(*this->stmt);
 return *this;
 }
 
@@ -216,7 +236,8 @@ operator == (
   else if (_rhs.stmt == nullptr)
   return this->stmt->is_done();
 
-  else if (this->stmt == nullptr) return _rhs.is_done();
+  else if (this->stmt == nullptr)
+  return _rhs.stmt->is_done();
 
 return (this->stmt->is_done() && _rhs.stmt->is_done());
 }
@@ -241,5 +262,5 @@ return this;
 
 } /* data_pattern_sqlite */
 #endif
-#include "sqlite_iterator_input.tcc"
+#include "sqlite_iterator.tcc"
 

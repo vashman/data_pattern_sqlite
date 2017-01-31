@@ -9,14 +9,6 @@
 #define DATA_PATTERN_SQLITE_SQLITE_STATEMENT_CPP
 
 namespace data_pattern_sqlite {
-namespace bits {
-/* *
-void
-sqlite_dtor_data (void *);
-
-void
-sqlite_dtor_data (void * _data){/ * do nothing * /}*/
-} /* bits */
 
 /* ctor */
 sqlite_statement::sqlite_statement (
@@ -37,7 +29,7 @@ sqlite_statement::sqlite_statement (
 , column_count (0)
 , stepped(false)
 , bind_parameter_count (0)
-// will be set to 1 for bind / output statements
+// will be set to 1 for when auto binding.
 , index (0) {
 
 sqlite_check_error ( sqlite3_prepare_v2 (
@@ -54,11 +46,11 @@ this->bind_parameter_count
   = sqlite3_bind_parameter_count(this->stmt);
   /*
    * If the statement has no parameters to bind, then step
-   * right away.* 
+   * right away.
    * if step finds a result, the statement will be treated
    * like a input statement. otherwise complete.
    */
-  //if (0 == bind_parameter_count) this->step();
+  if (0 == bind_parameter_count) this->step();
 }
 
 sqlite_statement::~sqlite_statement (
@@ -70,6 +62,7 @@ sqlite3_finalize(this->stmt);
 void
 sqlite_statement::step (
 ){
+  if (this->stepped) return;
 this->stepped = true;
 this->state = sqlite_check_error(sqlite3_step (this->stmt));
 this->column_count = sqlite3_column_count (this->stmt);
@@ -260,16 +253,24 @@ bool
 is_bind_done (
   sqlite_statement const & _stmt
 ){
-return _stmt.index >= _stmt.get_bind_parameter_count();
+return is_bind_done(_stmt, _stmt.index);
   //if (0 == --this->bind_parameter_count) this->step();
 }
 
 bool
-has_more_input (
+is_bind_done (
+  sqlite_statement const & _stmt
+, int _index
+){
+return _index >= _stmt.get_bind_parameter_count();
+}
+
+bool
+has_another_row (
   sqlite_statement const & _stmt
 ){
-return ((_stmt.get_state() == SQLITE_ROW)
-  && (_stmt.index >= _stmt.get_column_count()));
+return _stmt.get_state() == SQLITE_ROW;
+//  && (_stmt.index >= _stmt.get_column_count()));
 }
 
 void
